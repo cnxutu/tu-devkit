@@ -14,4 +14,5 @@ version_output="$(HOME="$test_home" PATH="$test_path:/usr/bin:/bin" "$test_path/
 list_output="$(HOME="$test_home" PATH="$test_path:/usr/bin:/bin" "$test_path/tu" list)"
 [[ "$list_output" == *standard* ]]
 HOME="$test_home" PATH="$test_path:/usr/bin:/bin" bash -c 'source "'$ROOT'/lib/logging.sh"; source "'$ROOT'/lib/platform.sh"; source "'$ROOT'/lib/utils.sh"; source "'$ROOT'/scripts/bootstrap.sh"; PACKAGE_MANAGER=none; ensure_packages git:git'
+HOME="$test_home" PATH="$test_path:/usr/bin:/bin" bash -c 'set -Eeuo pipefail; dry_home="$(mktemp -d)"; export HOME="$dry_home"; source "'$ROOT'/lib/logging.sh"; source "'$ROOT'/lib/platform.sh"; source "'$ROOT'/lib/utils.sh"; source "'$ROOT'/scripts/bootstrap.sh"; zsh() { :; }; DRY_RUN=1; YES=1; install_shell; configure_maven_mirrors; install_node; [[ ! -e "$HOME/.zshrc" && ! -e "$HOME/.m2/settings.xml" && ! -e "$HOME/.nvm" ]]'
 printf 'install bundle test passed\n'

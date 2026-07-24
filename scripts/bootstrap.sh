@@ -33,7 +33,9 @@ install_base() {
 }
 install_shell() {
   has zsh || { log_warn "zsh is missing"; return 0; }
-  local rc="${HOME}/.zshrc"; touch "$rc"
+  local rc="${HOME}/.zshrc"
+  if [[ "$DRY_RUN" == 1 ]]; then log_info "[DRY-RUN] update $rc and install Oh My Zsh if missing"; return 0; fi
+  touch "$rc"
   if ! grep -q 'tu-devkit shell configuration' "$rc" 2>/dev/null; then backup_file "$rc"; cat >> "$rc" <<'EOF'
 
 # tu-devkit shell configuration
@@ -49,6 +51,7 @@ EOF
 install_git() {
   if ! has git; then ensure_packages git:git; fi
   has git || { log_error 'Git is not installed'; return 1; }
+  [[ "$DRY_RUN" == 1 ]] && { log_info '[DRY-RUN] check Git identity, SSH key, and GitHub authentication'; return 0; }
   git config --global init.defaultBranch main 2>/dev/null || true
   [[ -n "$(git config --global user.name 2>/dev/null || true)" ]] || log_warn 'Git user.name is not configured'
   [[ -n "$(git config --global user.email 2>/dev/null || true)" ]] || log_warn 'Git user.email is not configured'
@@ -60,6 +63,7 @@ install_git() {
 }
 configure_maven_mirrors() {
   local settings="${HOME}/.m2/settings.xml" block_file tmp mode
+  if [[ "$DRY_RUN" == 1 ]]; then log_info "[DRY-RUN] configure Maven mirrors in $settings"; return 0; fi
   mkdir -p "${HOME}/.m2"
   if [[ -f "$settings" ]] && grep -Fq 'tu-devkit maven mirrors' "$settings"; then
     log_skip 'Maven mirror configuration'
@@ -124,7 +128,9 @@ install_java() {
   has mvn && configure_maven_mirrors || log_warn 'Maven is unavailable; mirror configuration will run after Maven is installed'
 }
 install_node() {
-  local nvm_dir="${NVM_DIR:-$HOME/.nvm}"; mkdir -p "$nvm_dir"
+  local nvm_dir="${NVM_DIR:-$HOME/.nvm}"
+  if [[ "$DRY_RUN" == 1 ]]; then log_info "[DRY-RUN] install/load NVM, Node.js LTS, Corepack, and pnpm"; return 0; fi
+  mkdir -p "$nvm_dir"
   if [[ ! -s "$nvm_dir/nvm.sh" ]]; then
     confirm "Install NVM from the official GitHub release?" || return 0
     local tmp; tmp="$(mktemp)"; curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh -o "$tmp"; PROFILE=/dev/null NVM_DIR="$nvm_dir" bash "$tmp"; rm -f "$tmp"
@@ -136,6 +142,7 @@ install_python() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then ensure_packages python3:python3 python3-pip:python3-pip pipx:pipx
   elif [[ "$PACKAGE_MANAGER" == brew ]]; then ensure_packages python3:python pipx:pipx
   fi
+  if [[ "$DRY_RUN" == 1 ]]; then log_info '[DRY-RUN] install uv with the official installer if missing'; return 0; fi
   if ! has uv && confirm 'Install uv using the official installer?'; then
     local tmp; tmp="$(mktemp)"; curl -LsSf https://astral.sh/uv/install.sh -o "$tmp"; sh "$tmp"; rm -f "$tmp"
   fi
@@ -150,6 +157,7 @@ install_docker() {
 install_vscode() { has code && log_skip 'VS Code code command' || log_warn 'VS Code code command unavailable; install VS Code and enable Shell Command: Install code command in PATH'; }
 install_official_script() {
   local url="$1" label="$2" tmp
+  if [[ "$DRY_RUN" == 1 ]]; then log_info "[DRY-RUN] download and run official installer for $label: $url"; return 0; fi
   confirm "从官方地址安装 ${label}？" || return 0
   tmp="$(mktemp)"
   if curl -fsSL "$url" -o "$tmp" && grep -Eiq '(codex|opencode)' "$tmp"; then

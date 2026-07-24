@@ -11,7 +11,7 @@ VERSION="0.1.0"
 usage() { cat <<'EOF'
 Tu DevKit - 开发环境初始化与维护工具
 
-用法: tu <命令> [profile|module] [--yes] [--verbose] [--strict]
+用法: tu <命令> [profile|module] [--yes] [--verbose] [--strict] [--dry-run]
 命令: init, install, check, doctor, update, list, ai, version, help
 配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
 EOF

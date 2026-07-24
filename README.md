@@ -139,6 +139,8 @@ tu install standard --yes       非交互式安装配置档案
 tu install docker               安装或检查单个模块
 tu check                        快速诊断
 tu doctor --verbose             详细诊断
+tu doctor --strict              严格诊断，问题时返回非零退出码
+tu install standard --dry-run  只展示安装/修改计划，不写入环境
 tu update                       查看并确认安全更新
 tu list                         列出配置档案和模块
 tu ai login                     依次配置 Codex 和 OpenCode 账号
@@ -148,6 +150,8 @@ tu version                      显示版本
 ```
 
 `tu install` 支持 `--yes`，用于自动确认软件包和安装器操作。工具不会创建 SSH 密钥、上传凭据、配置 API key 或打印 secrets。GitHub 登录需手动执行 `gh auth login`。
+
+`--dry-run` 适合第一次执行或 CI 预览：会展示包管理器、NVM/pnpm、Maven、Shell 和 AI CLI 的计划，不修改 `.zshrc`、`~/.m2/settings.xml` 或其他用户配置。`tu doctor --strict` 适合自动化验收，发现缺少工具、Docker daemon 不可用或 Git 身份未配置时返回非零退出码。
 
 ## 安全与故障排查
 
@@ -282,4 +286,4 @@ tests/       基础 Shell 测试
 
 ## 后续计划
 
-增加更多包管理器适配、更丰富的自定义模块选择、按 profile 安装 VS Code 扩展、Rust/DevOps/硬件原生安装器、macOS 与 WSL2 CI 矩阵测试，以及持久化用户配置文件。
+增加更多包管理器适配、安装事务和回滚、结构化 JSON 诊断输出、按 profile 安装 VS Code 扩展、Rust/DevOps/硬件原生安装器、macOS 与 WSL2 CI 矩阵测试，以及持久化用户配置文件。
