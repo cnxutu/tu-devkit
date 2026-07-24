@@ -51,6 +51,58 @@ tu doctor
 
 其他配置档案：`minimal`、`java`、`frontend`、`python-ai`、`rust`、`devops`、`hardware`。Rust、DevOps 和硬件 profile 当前提供安全的结构和诊断能力，暂不执行重量级自动安装。
 
+### 标准版工具总览
+
+执行 `tu install standard --yes` 后，工具会按下表安装或检查。已存在的工具会跳过，账号登录和宿主机集成不会由脚本代替。
+
+| 分类 | 工具/组件 | 标准版 | 处理方式 | 用途 |
+| --- | --- | :---: | --- | --- |
+| 基础系统 | Git | ✓ | 安装/检查 | 版本控制、项目协作 |
+| 基础系统 | curl、wget | ✓ | 安装/检查 | 下载和网络请求 |
+| 基础系统 | unzip、zip、jq、tree | ✓ | 安装/检查 | 文件、JSON 和目录操作 |
+| 基础系统 | make、build 工具、ca-certificates、gnupg | ✓ | 安装/检查 | 编译、证书和软件源 |
+| 基础系统 | OpenSSH client | ✓ | 安装/检查 | SSH 连接 GitHub/服务器 |
+| GitHub | GitHub CLI (`gh`) | ✓ | 安装/检查 | GitHub 登录和仓库操作 |
+| GitHub | lazygit | ✓ | 安装/检查 | 终端 Git 工作流 |
+| Shell | zsh、Oh My Zsh | ✓ | 安装/安全追加配置 | Shell 环境、别名和 PATH |
+| Git | user.name、user.email、默认分支 | ✓ | 检查/提示手动配置 | 提交身份和分支规范 |
+| Git/SSH | SSH key、GitHub SSH 连通性 | ✓ | 检查，密钥需手动生成 | 安全拉取和推送代码 |
+| Java | OpenJDK 17 | ✓ | 安装/检查 | Java 后端开发 |
+| Java | Maven、Gradle | ✓ | 安装/检查 | Java 构建和依赖管理 |
+| Node.js | NVM | ✓ | 官方安装器 | Node.js 版本管理 |
+| Node.js | Node.js LTS、npm | ✓ | NVM 安装/检查 | 前端和 CLI 工具 |
+| Node.js | Corepack、pnpm | ✓ | 启用/安装 | 当前项目常用的包管理器 |
+| Python | Python 3、pip、pipx | ✓ | 安装/检查 | Python 开发和 CLI 工具 |
+| Python | uv | ✓ | 官方安装器/检查 | Python 环境和依赖管理 |
+| 容器 | Docker CLI、Docker Compose | ✓ | 检查；按平台处理 daemon | 容器开发和服务编排 |
+| 编辑器 | VS Code `code` 命令 | ✓ | 检查/提示手动启用 | 编辑器和 `code .` |
+| AI Agent | Codex CLI | ✓ | npm、Homebrew 或官方安装器 | OpenAI 代码代理 |
+| AI Agent | OpenCode | ✓ | npm、Homebrew 或官方安装器 | 多 provider AI 代码代理 |
+
+### Profile 包含关系
+
+| Profile | 包含模块 | 适用场景 | 当前状态 |
+| --- | --- | --- | --- |
+| `minimal` | 基础、Shell、Git、VS Code 检查 | 轻量通用环境 | 已实现 |
+| `standard` | 基础、Shell、Git、Java、Node、Python、Docker、VS Code、AI | 推荐的 AI 全栈环境 | 已实现 |
+| `java` | 基础、Shell、Git、Java、Docker、VS Code | Java 后端 | 已实现 |
+| `frontend` | 基础、Shell、Git、Node、VS Code | Node.js 前端 | 已实现 |
+| `python-ai` | 基础、Shell、Git、Python、AI、VS Code | Python 和 AI | 已实现 |
+| `rust` | 基础、Shell、Git、Rust、VS Code | Rust 开发 | 结构已提供，安装器待完善 |
+| `devops` | 基础、Shell、Git、Docker、DevOps、VS Code | DevOps 工具链 | 结构已提供，安装器待完善 |
+| `hardware` | 基础、Shell、Git、Hardware、VS Code | 硬件与 IoT | 结构已提供，安装器待完善 |
+
+### 不会自动处理的事项
+
+| 事项 | 原因 | 需要执行的操作 |
+| --- | --- | --- |
+| GitHub 账号登录 | 涉及用户授权 | `gh auth login` |
+| Codex 登录 | 需要浏览器/交互式账号授权 | `tu ai login`，选择 `Sign in with ChatGPT` |
+| OpenCode provider/API key | provider 由用户选择 | `opencode auth login` 或 `tu ai login` |
+| SSH 私钥生成和上传 | 私钥属于敏感凭据 | 手动运行 `ssh-keygen` 并只上传 `.pub` 公钥 |
+| Docker Desktop WSL Integration | 属于 Windows 宿主机设置 | 在 Docker Desktop 设置中启用 Ubuntu 发行版 |
+| VS Code Remote - WSL | 属于编辑器宿主机集成 | Windows VS Code 安装 Remote - WSL 扩展 |
+
 ## 命令
 
 ```text
