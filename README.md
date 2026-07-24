@@ -9,6 +9,7 @@ git clone https://github.com/<username>/tu-devkit.git
 cd tu-devkit
 chmod +x install.sh
 ./install.sh
+export PATH="$HOME/.local/bin:$PATH"
 tu init
 tu doctor
 ```
@@ -70,6 +71,7 @@ tu ai login
 
 ```bash
 ./install.sh
+export PATH="$HOME/.local/bin:$PATH"
 tu install standard --yes
 tu doctor
 tu ai login
@@ -83,6 +85,7 @@ tu ai login
 
 ```bash
 ./install.sh
+export PATH="$HOME/.local/bin:$PATH"
 tu install standard --yes
 tu doctor
 tu ai login
