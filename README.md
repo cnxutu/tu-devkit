@@ -227,6 +227,8 @@ bash tests/run.sh
 shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
 ```
 
+仓库 CI 会在 Ubuntu 和 macOS 上运行基础测试、Bash 语法检查和 ShellCheck。
+
 所有安装模块都应具备幂等性，适合重复执行和人工审查。
 
 Profile 的模块清单位于 `profiles/*.conf`，`tu list` 和 `tu install` 会直接读取这些文件。新增一个 profile 时，先添加对应的 `.conf` 文件；如果使用现有模块即可生效，若新增工具类别，再在 `scripts/bootstrap.sh` 的 `install_module` 中补充安装逻辑和测试。

@@ -1,0 +1,42 @@
+name: tu-devkit CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Bash tests
+        shell: bash
+        run: bash tests/run.sh
+
+      - name: Run syntax checks
+        shell: bash
+        run: bash -n install.sh bin/tu bin/tu-wrapper lib/*.sh scripts/*.sh tests/*.sh
+
+      - name: Install ShellCheck
+        shell: bash
+        run: |
+          if command -v shellcheck >/dev/null 2>&1; then
+            exit 0
+          elif [[ "$RUNNER_OS" == Linux ]]; then
+            sudo apt-get update
+            sudo apt-get install -y shellcheck
+          else
+            brew install shellcheck
+          fi
+
+      - name: Run ShellCheck
+        shell: bash
+        run: shellcheck install.sh bin/tu bin/tu-wrapper lib/*.sh scripts/*.sh tests/*.sh
