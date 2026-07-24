@@ -4,6 +4,23 @@ root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 install -d "${HOME}/.local/bin"
 install -m 0755 "${root_dir}/bin/tu" "${HOME}/.local/bin/tu"
 printf '%s\n' "Installed tu to ${HOME}/.local/bin/tu"
+path_install_dir=""
+old_ifs="$IFS"
+IFS=:
+for path_dir in $PATH; do
+  [[ -n "$path_dir" && -d "$path_dir" && -w "$path_dir" ]] || continue
+  [[ "$path_dir" == "$HOME/.local/bin" ]] && continue
+  if [[ -e "$path_dir/tu" && ! -L "$path_dir/tu" ]]; then
+    continue
+  fi
+  path_install_dir="$path_dir"
+  break
+done
+IFS="$old_ifs"
+if [[ -n "$path_install_dir" ]]; then
+  install -m 0755 "${root_dir}/bin/tu" "$path_install_dir/tu"
+  printf '%s\n' "Installed tu to PATH directory: $path_install_dir/tu"
+fi
 if [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
   shell_rc="${HOME}/.zshrc"
   [[ "${SHELL:-}" == */bash ]] && shell_rc="${HOME}/.bashrc"
@@ -23,5 +40,8 @@ if [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
     printf '%s\n' "Added ~/.local/bin to $shell_rc"
   fi
   printf '%s\n' "当前终端请先执行: export PATH=\"$HOME/.local/bin:\$PATH\""
+fi
+if [[ -z "$path_install_dir" ]]; then
+  printf '%s\n' '当前终端请执行: source ~/.zshrc（或 source ~/.bashrc）'
 fi
 printf '%s\n' '然后运行: tu doctor'

@@ -14,7 +14,7 @@ tu init
 tu doctor
 ```
 
-安装脚本会把 `tu` 放到 `~/.local/bin`。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。
+安装脚本会把 `tu` 放到 `~/.local/bin`，并在当前 PATH 中存在可写目录时同步放置一份，因此 macOS Homebrew 环境通常无需重新打开终端即可执行。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。如果当前没有可写的 PATH 目录，安装器会提示执行 `source ~/.zshrc` 或 `source ~/.bashrc`。
 
 支持的目标环境是 macOS，以及 Windows 11/10 中的 Ubuntu WSL2。Windows 原生 PowerShell 不在本项目范围内；请在 WSL2 Ubuntu 终端中运行本工具。
 
