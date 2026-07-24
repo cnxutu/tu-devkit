@@ -225,6 +225,8 @@ shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
 
 所有安装模块都应具备幂等性，适合重复执行和人工审查。
 
+Profile 的模块清单位于 `profiles/*.conf`，`tu list` 和 `tu install` 会直接读取这些文件。新增一个 profile 时，先添加对应的 `.conf` 文件；如果使用现有模块即可生效，若新增工具类别，再在 `scripts/bootstrap.sh` 的 `install_module` 中补充安装逻辑和测试。
+
 ## Git、SSH 与 GitHub 配置
 
 安装完成后，先检查 Git：

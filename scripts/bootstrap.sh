@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+PROFILE_DIR="${TU_PROFILE_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../profiles" && pwd)}"
 install_packages() {
   local packages=("$@"); ((${#packages[@]})) || return 0
   case "$PACKAGE_MANAGER" in
@@ -194,9 +195,22 @@ EOF
   esac
 }
 install_module() { case "$1" in base|minimal) install_base;; shell) install_shell;; git) install_git;; java) install_java;; node|frontend) install_node;; python|python-ai) install_python;; docker) install_docker;; vscode) install_vscode;; ai|standard) install_ai;; rust|devops|hardware) log_warn "$1 profile is scaffolded; no automatic installer yet";; *) log_error "Unknown module/profile: $1"; return 2;; esac; }
-profile_modules() { case "$1" in minimal) printf '%s\n' base shell git vscode;; standard) printf '%s\n' base shell git java node python docker vscode ai;; java) printf '%s\n' base shell git java docker vscode;; frontend) printf '%s\n' base shell git node vscode;; python-ai) printf '%s\n' base shell git python ai vscode;; rust|devops|hardware) printf '%s\n' base shell git "$1" vscode;; *) return 2;; esac; }
-install_profile() { local profile="$1"; parse_flags "${@:2}"; detect_platform; [[ "$OS" != unsupported ]] || { log_error 'Unsupported operating system'; return 1; }; log_info "Installing profile: $profile"; while read -r module; do install_module "$module"; done < <(profile_modules "$profile"); }
-install_target() { local target="$1"; shift; parse_flags "$@"; detect_platform; case "$target" in minimal|standard|java|frontend|python-ai|rust|devops|hardware) install_profile "$target" "$@";; *) install_module "$target";; esac; }
+profile_modules() {
+  local profile_file="${PROFILE_DIR}/$1.conf"
+  [[ -f "$profile_file" ]] || { log_error "Unknown profile: $1"; return 2; }
+  grep -vE '^[[:space:]]*(#|$)' "$profile_file" | tr '[:space:]' '\n' | sed '/^$/d'
+}
+install_profile() {
+  local profile="$1"; parse_flags "${@:2}"; detect_platform
+  [[ -f "${PROFILE_DIR}/${profile}.conf" ]] || { log_error "Unknown profile: $profile"; return 2; }
+  [[ "$OS" != unsupported ]] || { log_error 'Unsupported operating system'; return 1; }
+  log_info "Installing profile: $profile"
+  while read -r module; do install_module "$module"; done < <(profile_modules "$profile")
+}
+install_target() {
+  local target="$1"; shift; parse_flags "$@"; detect_platform
+  if [[ -f "${PROFILE_DIR}/${target}.conf" ]]; then install_profile "$target" "$@"; else install_module "$target"; fi
+}
 select_profile() { cat <<'EOF'
 Tu DevKit
 1. 标准 AI 全栈环境
@@ -215,8 +229,14 @@ EOF
   [[ "$SELECTED_PROFILE" == custom ]] && { read -r -p '请输入以空格分隔的模块（如 base node python）: ' CUSTOM_MODULES; for m in $CUSTOM_MODULES; do install_module "$m"; done; return 0; }
   [[ "$SELECTED_PROFILE" == doctor ]] && { doctor_main; return 0; }
 }
-list_profiles() { cat <<'EOF'
-配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
-模块: base, shell, git, java, node, python, docker, vscode, ai
-EOF
+list_profiles() {
+  printf '配置档案:\n'
+  local profile_file profile modules
+  for profile_file in "${PROFILE_DIR}"/*.conf; do
+    [[ -f "$profile_file" ]] || continue
+    profile="$(basename "$profile_file" .conf)"
+    modules="$(profile_modules "$profile" | paste -sd ',' - | sed 's/,/, /g')"
+    printf '  %-12s %s\n' "$profile" "$modules"
+  done
+  printf '模块: base, shell, git, java, node, python, docker, vscode, ai\n'
 }
