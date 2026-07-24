@@ -12,7 +12,14 @@ ensure_packages() {
   for pkg in "$@"; do has "${pkg%%:*}" || missing+=("${pkg#*:}"); done
   install_packages "${missing[@]}"
 }
-install_base() { [[ "$PACKAGE_MANAGER" == apt ]] && ensure_packages git:git curl:curl wget:wget unzip:unzip zip:zip jq:jq tree:tree make:make ca-certificates:ca-certificates gnupg:gnupg openssh-client:openssh-client zsh:zsh || [[ "$PACKAGE_MANAGER" == brew ]] && ensure_packages git:git curl:curl wget:wget unzip:unzip zip:zip jq:jq tree:tree make:make ca-certificates:ca-certificates gnupg:gnupg openssh-client:openssh-client zsh:zsh; ensure_packages gh:gh lazygit:lazygit; }
+install_base() {
+  if [[ "$PACKAGE_MANAGER" == apt ]]; then
+    ensure_packages git:git curl:curl wget:wget unzip:unzip zip:zip jq:jq tree:tree make:make ca-certificates:ca-certificates gpg:gnupg ssh:openssh-client zsh:zsh
+  elif [[ "$PACKAGE_MANAGER" == brew ]]; then
+    ensure_packages git:git curl:curl wget:wget unzip:unzip zip:zip jq:jq tree:tree make:make ca-certificates:ca-certificates gpg:gnupg ssh:openssh zsh:zsh
+  fi
+  ensure_packages gh:gh lazygit:lazygit
+}
 install_shell() {
   has zsh || { log_warn "zsh is missing"; return 0; }
   local rc="${HOME}/.zshrc"; touch "$rc"
@@ -45,8 +52,21 @@ install_node() {
   safe_source "$nvm_dir/nvm.sh"
   if declare -F nvm >/dev/null 2>&1; then nvm install --lts; nvm alias default 'lts/*'; corepack enable 2>/dev/null || true; has pnpm || npm install --global pnpm; fi
 }
-install_python() { [[ "$PACKAGE_MANAGER" == apt ]] && install_packages python3 python3-pip pipx || [[ "$PACKAGE_MANAGER" == brew ]] && install_packages python pipx; if ! has uv && confirm 'Install uv using the official installer?'; then local tmp; tmp="$(mktemp)"; curl -LsSf https://astral.sh/uv/install.sh -o "$tmp"; sh "$tmp"; rm -f "$tmp"; fi; }
-install_docker() { if has docker; then log_skip "Docker CLI already installed"; else [[ "$PACKAGE_MANAGER" == brew ]] && ensure_packages docker:docker docker-compose:docker-compose || log_warn 'Install Docker Desktop/Engine according to your platform'; fi; }
+install_python() {
+  if [[ "$PACKAGE_MANAGER" == apt ]]; then ensure_packages python3:python3 python3-pip:python3-pip pipx:pipx
+  elif [[ "$PACKAGE_MANAGER" == brew ]]; then ensure_packages python3:python pipx:pipx
+  fi
+  if ! has uv && confirm 'Install uv using the official installer?'; then
+    local tmp; tmp="$(mktemp)"; curl -LsSf https://astral.sh/uv/install.sh -o "$tmp"; sh "$tmp"; rm -f "$tmp"
+  fi
+}
+install_docker() {
+  if has docker; then log_skip "Docker CLI already installed"
+  elif [[ "$OS" == macos && "$PACKAGE_MANAGER" == brew ]]; then
+    log_info 'macOS Docker support uses Docker Desktop; the daemon runs outside the shell.'
+    confirm 'Install Docker Desktop with Homebrew Cask?' && run brew install --cask docker || log_warn 'Skipped Docker Desktop installation'
+  else log_warn '请安装 Docker Desktop（macOS/WSL2）或 Docker Engine（Linux），然后重新运行 tu doctor'; fi
+}
 install_vscode() { has code && log_skip 'VS Code code command' || log_warn 'VS Code code command unavailable; install VS Code and enable Shell Command: Install code command in PATH'; }
 install_official_script() {
   local url="$1" label="$2" tmp

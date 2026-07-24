@@ -14,7 +14,7 @@ IFS=:
 for path_dir in $PATH; do
   [[ -n "$path_dir" && -d "$path_dir" && -w "$path_dir" ]] || continue
   [[ "$path_dir" == "$HOME/.local/bin" ]] && continue
-  if [[ -e "$path_dir/tu" && ! -L "$path_dir/tu" ]]; then
+  if [[ -e "$path_dir/tu" && ! -L "$path_dir/tu" ]] && ! grep -Eq '(TU_ROOT|tu_data_root|tu-devkit)' "$path_dir/tu" 2>/dev/null; then
     continue
   fi
   path_install_dir="$path_dir"
