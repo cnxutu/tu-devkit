@@ -43,7 +43,11 @@ if [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
     } >> "$shell_rc"
     printf '%s\n' "Added ~/.local/bin to $shell_rc"
   fi
-  printf '%s\n' "当前终端请先执行: export PATH=\"$HOME/.local/bin:\$PATH\""
+  if [[ -z "$path_install_dir" ]]; then
+    printf '%s\n' "当前终端请先执行: export PATH=\"$HOME/.local/bin:\$PATH\""
+  else
+    printf '%s\n' "当前 PATH 已安装 tu wrapper，可直接运行: tu doctor"
+  fi
 fi
 if [[ -z "$path_install_dir" ]]; then
   printf '%s\n' '当前终端请执行: source ~/.zshrc（或 source ~/.bashrc）'
