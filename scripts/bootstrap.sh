@@ -7,9 +7,19 @@ install_packages() {
     *) log_warn "No supported package manager detected";;
   esac
 }
+package_present() {
+  case "$PACKAGE_MANAGER" in
+    apt) dpkg-query -W -f='${Status}' "$1" 2>/dev/null | grep -q 'install ok installed' ;;
+    brew) brew list --formula "$1" >/dev/null 2>&1 ;;
+    *) return 1 ;;
+  esac
+}
 ensure_packages() {
-  local pkg; local missing=()
-  for pkg in "$@"; do has "${pkg%%:*}" || missing+=("${pkg#*:}"); done
+  local pkg command package; local missing=()
+  for pkg in "$@"; do
+    command="${pkg%%:*}"; package="${pkg#*:}"
+    has "$command" || package_present "$package" || missing+=("$package")
+  done
   install_packages "${missing[@]}"
 }
 install_base() {
@@ -120,24 +130,24 @@ install_profile() { local profile="$1"; parse_flags "${@:2}"; detect_platform; [
 install_target() { local target="$1"; shift; case "$target" in minimal|standard|java|frontend|python-ai|rust|devops|hardware) install_profile "$target" "$@";; *) install_module "$target";; esac; }
 select_profile() { cat <<'EOF'
 Tu DevKit
-1. Standard AI Full-Stack
-2. Minimal Base Environment
-3. Java Backend
-4. Frontend
-5. Python & AI
-6. Rust Development
+1. 标准 AI 全栈环境
+2. 最小基础环境
+3. Java 后端
+4. 前端开发
+5. Python 与 AI
+6. Rust 开发
 7. DevOps
-8. Hardware & IoT
-9. Custom Selection
-10. Doctor Only
+8. 硬件与 IoT
+9. 自定义选择
+10. 仅运行诊断
 EOF
-  local choice; read -r -p 'Select installation mode [1-10]: ' choice
-  case "$choice" in 1) SELECTED_PROFILE=standard;;2) SELECTED_PROFILE=minimal;;3) SELECTED_PROFILE=java;;4) SELECTED_PROFILE=frontend;;5) SELECTED_PROFILE=python-ai;;6) SELECTED_PROFILE=rust;;7) SELECTED_PROFILE=devops;;8) SELECTED_PROFILE=hardware;;10) SELECTED_PROFILE=doctor;;9) read -r -p 'Enter modules separated by spaces: ' CUSTOM_MODULES; SELECTED_PROFILE=custom;;*) log_error 'Invalid selection'; return 2;; esac
-  [[ "$SELECTED_PROFILE" == custom ]] && { for m in $CUSTOM_MODULES; do install_module "$m"; done; return 0; }
+  local choice; read -r -p '请选择安装模式 [1-10]: ' choice
+  case "$choice" in 1) SELECTED_PROFILE=standard;;2) SELECTED_PROFILE=minimal;;3) SELECTED_PROFILE=java;;4) SELECTED_PROFILE=frontend;;5) SELECTED_PROFILE=python-ai;;6) SELECTED_PROFILE=rust;;7) SELECTED_PROFILE=devops;;8) SELECTED_PROFILE=hardware;;10) SELECTED_PROFILE=doctor;;9) SELECTED_PROFILE=custom;;*) log_error '选择无效'; return 2;; esac
+  [[ "$SELECTED_PROFILE" == custom ]] && { read -r -p '请输入以空格分隔的模块（如 base node python）: ' CUSTOM_MODULES; for m in $CUSTOM_MODULES; do install_module "$m"; done; return 0; }
   [[ "$SELECTED_PROFILE" == doctor ]] && { doctor_main; return 0; }
 }
 list_profiles() { cat <<'EOF'
-Profiles: minimal, standard, java, frontend, python-ai, rust, devops, hardware
-Modules: base, shell, git, java, node, python, docker, vscode, ai
+配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
+模块: base, shell, git, java, node, python, docker, vscode, ai
 EOF
 }

@@ -16,7 +16,11 @@ Tu DevKit - 开发环境初始化与维护工具
 配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
 EOF
 }
-init_cmd() { select_profile; install_profile "${SELECTED_PROFILE}" "$@"; }
+init_cmd() {
+  select_profile
+  [[ "${SELECTED_PROFILE}" == custom || "${SELECTED_PROFILE}" == doctor ]] && return 0
+  install_profile "${SELECTED_PROFILE}" "$@"
+}
 main() {
   local command="${1:-help}"; shift || true
   case "$command" in
