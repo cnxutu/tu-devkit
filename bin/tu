@@ -12,7 +12,7 @@ usage() { cat <<'EOF'
 Tu DevKit - 开发环境初始化与维护工具
 
 用法: tu <命令> [profile|module] [--yes] [--verbose]
-命令: init, install, check, doctor, update, list, version, help
+命令: init, install, check, doctor, update, list, ai, version, help
 配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
 EOF
 }
@@ -24,6 +24,7 @@ main() {
     install) local target="${1:-standard}"; shift || true; install_target "$target" "$@" ;;
     check|doctor) doctor_main "$@" ;;
     update) update_main "$@" ;;
+    ai) ai_main "$@" ;;
     list) list_profiles ;;
     version|--version|-v) printf 'tu-devkit %s\n' "$VERSION" ;;
     help|--help|-h) usage ;;

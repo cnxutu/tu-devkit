@@ -48,13 +48,51 @@ install_node() {
 install_python() { [[ "$PACKAGE_MANAGER" == apt ]] && install_packages python3 python3-pip pipx || [[ "$PACKAGE_MANAGER" == brew ]] && install_packages python pipx; if ! has uv && confirm 'Install uv using the official installer?'; then local tmp; tmp="$(mktemp)"; curl -LsSf https://astral.sh/uv/install.sh -o "$tmp"; sh "$tmp"; rm -f "$tmp"; fi; }
 install_docker() { if has docker; then log_skip "Docker CLI already installed"; else [[ "$PACKAGE_MANAGER" == brew ]] && ensure_packages docker:docker docker-compose:docker-compose || log_warn 'Install Docker Desktop/Engine according to your platform'; fi; }
 install_vscode() { has code && log_skip 'VS Code code command' || log_warn 'VS Code code command unavailable; install VS Code and enable Shell Command: Install code command in PATH'; }
+install_official_script() {
+  local url="$1" label="$2" tmp
+  confirm "从官方地址安装 ${label}？" || return 0
+  tmp="$(mktemp)"
+  if curl -fsSL "$url" -o "$tmp" && grep -Eiq '(codex|opencode)' "$tmp"; then
+    sh "$tmp"
+  else
+    log_error "无法验证 ${label} 官方安装脚本，已停止执行"
+  fi
+  rm -f "$tmp"
+}
 install_ai() {
   if ! has codex; then
-    if has npm && confirm 'Install Codex CLI from the @openai/codex npm package?'; then run npm install --global @openai/codex; else log_warn 'Codex CLI missing; install it from the official OpenAI Codex repository'; fi
+    if has npm && confirm '通过 @openai/codex npm 包安装 Codex CLI？'; then run npm install --global @openai/codex
+    elif [[ "$OS" == macos ]] && has brew && confirm '通过 Homebrew Cask 安装 Codex CLI？'; then run brew install --cask codex
+    else install_official_script 'https://chatgpt.com/codex/install.sh' 'Codex CLI'; fi
   else log_skip 'Codex CLI'; fi
   if ! has opencode; then
-    if has npm && confirm 'Install OpenCode from the opencode-ai npm package?'; then run npm install --global opencode-ai; else log_warn 'OpenCode missing; install it from the official OpenCode documentation'; fi
+    if has npm && confirm '通过 opencode-ai npm 包安装 OpenCode？'; then run npm install --global opencode-ai
+    elif [[ "$OS" == macos ]] && has brew && confirm '通过 Homebrew 安装 OpenCode？'; then run brew install anomalyco/tap/opencode
+    else install_official_script 'https://opencode.ai/install' 'OpenCode'; fi
   else log_skip 'OpenCode'; fi
+}
+ai_main() {
+  local action="${1:-help}"
+  case "$action" in
+    help) cat <<'EOF'
+AI 工具命令：
+  tu ai login       依次启动 Codex 和 OpenCode 登录流程
+  tu ai codex       打开 Codex CLI
+  tu ai opencode    打开 OpenCode TUI
+  tu ai status      检查 AI CLI 是否已安装
+EOF
+      ;;
+    status) doctor_main ;;
+    login)
+      has codex || { log_error 'Codex CLI 未安装，请先运行: tu install standard --yes'; return 1; }
+      has opencode || { log_error 'OpenCode 未安装，请先运行: tu install standard --yes'; return 1; }
+      log_info '即将启动 Codex。首次运行时选择 Sign in with ChatGPT。'; codex
+      log_info '即将启动 OpenCode provider 登录。'; opencode auth login
+      ;;
+    codex) has codex && exec codex || { log_error 'Codex CLI 未安装'; return 1; } ;;
+    opencode) has opencode && exec opencode || { log_error 'OpenCode 未安装'; return 1; } ;;
+    *) log_error "未知 AI 操作: $action"; ai_main help; return 2 ;;
+  esac
 }
 install_module() { case "$1" in base|minimal) install_base;; shell) install_shell;; git) install_git;; java) install_java;; node|frontend) install_node;; python|python-ai) install_python;; docker) install_docker;; vscode) install_vscode;; ai|standard) install_ai;; rust|devops|hardware) log_warn "$1 profile is scaffolded; no automatic installer yet";; *) log_error "Unknown module/profile: $1"; return 2;; esac; }
 profile_modules() { case "$1" in minimal) printf '%s\n' base shell git vscode;; standard) printf '%s\n' base shell git java node python docker vscode ai;; java) printf '%s\n' base shell git java docker vscode;; frontend) printf '%s\n' base shell git node vscode;; python-ai) printf '%s\n' base shell git python ai vscode;; rust|devops|hardware) printf '%s\n' base shell git "$1" vscode;; *) return 2;; esac; }
