@@ -13,4 +13,5 @@ version_output="$(HOME="$test_home" PATH="$test_path:/usr/bin:/bin" "$test_path/
 [[ "$version_output" == "tu-devkit 0.1.0" ]]
 list_output="$(HOME="$test_home" PATH="$test_path:/usr/bin:/bin" "$test_path/tu" list)"
 [[ "$list_output" == *standard* ]]
+HOME="$test_home" PATH="$test_path:/usr/bin:/bin" bash -c 'source "'$ROOT'/lib/logging.sh"; source "'$ROOT'/lib/platform.sh"; source "'$ROOT'/lib/utils.sh"; source "'$ROOT'/scripts/bootstrap.sh"; PACKAGE_MANAGER=none; ensure_packages git:git'
 printf 'install bundle test passed\n'
