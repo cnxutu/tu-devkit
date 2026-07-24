@@ -20,7 +20,7 @@ ensure_packages() {
     command="${pkg%%:*}"; package="${pkg#*:}"
     has "$command" || package_present "$package" || missing+=("$package")
   done
-  install_packages "${missing[@]}"
+  if ((${#missing[@]})); then install_packages "${missing[@]}"; fi
 }
 install_base() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then
@@ -52,7 +52,11 @@ install_git() {
   [[ -n "$(git config --global user.email 2>/dev/null || true)" ]] || log_warn 'Git user.email is not configured'
   has gh && gh auth status >/dev/null 2>&1 || log_warn 'GitHub CLI is not authenticated; run: gh auth login'
 }
-install_java() { [[ "$PACKAGE_MANAGER" == apt ]] && install_packages openjdk-17-jdk maven gradle || [[ "$PACKAGE_MANAGER" == brew ]] && install_packages openjdk@17 maven gradle; }
+install_java() {
+  if [[ "$PACKAGE_MANAGER" == apt ]]; then install_packages openjdk-17-jdk maven gradle
+  elif [[ "$PACKAGE_MANAGER" == brew ]]; then install_packages openjdk@17 maven gradle
+  fi
+}
 install_node() {
   local nvm_dir="${NVM_DIR:-$HOME/.nvm}"; mkdir -p "$nvm_dir"
   if [[ ! -s "$nvm_dir/nvm.sh" ]]; then
