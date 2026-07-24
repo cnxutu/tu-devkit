@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+tu_data_root="${TU_DEVKIT_ROOT:-${XDG_DATA_HOME:-${HOME}/.local/share}/tu-devkit}"
+exec "${tu_data_root}/bin/tu" "$@"

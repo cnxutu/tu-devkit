@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-install -d "${HOME}/.local/bin"
-install -m 0755 "${root_dir}/bin/tu" "${HOME}/.local/bin/tu"
+tu_data_root="${XDG_DATA_HOME:-${HOME}/.local/share}/tu-devkit"
+install -d "${HOME}/.local/bin" "$tu_data_root"
+cp -R "${root_dir}/lib" "${root_dir}/scripts" "${root_dir}/profiles" "$tu_data_root/"
+install -d "$tu_data_root/bin"
+install -m 0755 "${root_dir}/bin/tu" "$tu_data_root/bin/tu"
+install -m 0755 "${root_dir}/bin/tu-wrapper" "${HOME}/.local/bin/tu"
 printf '%s\n' "Installed tu to ${HOME}/.local/bin/tu"
 path_install_dir=""
 old_ifs="$IFS"
@@ -18,7 +22,7 @@ for path_dir in $PATH; do
 done
 IFS="$old_ifs"
 if [[ -n "$path_install_dir" ]]; then
-  install -m 0755 "${root_dir}/bin/tu" "$path_install_dir/tu"
+  install -m 0755 "${root_dir}/bin/tu-wrapper" "$path_install_dir/tu"
   printf '%s\n' "Installed tu to PATH directory: $path_install_dir/tu"
 fi
 if [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
