@@ -46,10 +46,15 @@ EOF
   else has oh-my-zsh || [[ -d "${HOME}/.oh-my-zsh" ]] || log_skip "Oh My Zsh"; fi
 }
 install_git() {
+  if ! has git; then ensure_packages git:git; fi
+  has git || { log_error 'Git is not installed'; return 1; }
   git config --global init.defaultBranch main 2>/dev/null || true
-  has git || return 0
   [[ -n "$(git config --global user.name 2>/dev/null || true)" ]] || log_warn 'Git user.name is not configured'
   [[ -n "$(git config --global user.email 2>/dev/null || true)" ]] || log_warn 'Git user.email is not configured'
+  if [[ ! -f "$HOME/.ssh/id_ed25519" && ! -f "$HOME/.ssh/id_rsa" ]]; then
+    log_warn 'No SSH key found; generate one manually if you use GitHub SSH remotes'
+    log_info 'Example: ssh-keygen -t ed25519 -C "your-email@example.com"'
+  fi
   has gh && gh auth status >/dev/null 2>&1 || log_warn 'GitHub CLI is not authenticated; run: gh auth login'
 }
 install_java() {
@@ -131,7 +136,7 @@ EOF
 install_module() { case "$1" in base|minimal) install_base;; shell) install_shell;; git) install_git;; java) install_java;; node|frontend) install_node;; python|python-ai) install_python;; docker) install_docker;; vscode) install_vscode;; ai|standard) install_ai;; rust|devops|hardware) log_warn "$1 profile is scaffolded; no automatic installer yet";; *) log_error "Unknown module/profile: $1"; return 2;; esac; }
 profile_modules() { case "$1" in minimal) printf '%s\n' base shell git vscode;; standard) printf '%s\n' base shell git java node python docker vscode ai;; java) printf '%s\n' base shell git java docker vscode;; frontend) printf '%s\n' base shell git node vscode;; python-ai) printf '%s\n' base shell git python ai vscode;; rust|devops|hardware) printf '%s\n' base shell git "$1" vscode;; *) return 2;; esac; }
 install_profile() { local profile="$1"; parse_flags "${@:2}"; detect_platform; [[ "$OS" != unsupported ]] || { log_error 'Unsupported operating system'; return 1; }; log_info "Installing profile: $profile"; while read -r module; do install_module "$module"; done < <(profile_modules "$profile"); }
-install_target() { local target="$1"; shift; case "$target" in minimal|standard|java|frontend|python-ai|rust|devops|hardware) install_profile "$target" "$@";; *) install_module "$target";; esac; }
+install_target() { local target="$1"; shift; parse_flags "$@"; detect_platform; case "$target" in minimal|standard|java|frontend|python-ai|rust|devops|hardware) install_profile "$target" "$@";; *) install_module "$target";; esac; }
 select_profile() { cat <<'EOF'
 Tu DevKit
 1. 标准 AI 全栈环境

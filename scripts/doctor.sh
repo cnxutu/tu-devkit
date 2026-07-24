@@ -10,5 +10,10 @@ doctor_main() {
     if [[ "$IS_WSL" == 1 ]]; then printf '  ! Docker daemon     不可用（检查 Docker Desktop WSL integration 或原生 daemon）\n';
     else printf '  ! Docker daemon     不可用（启动 Docker Desktop 或 Docker daemon）\n'; fi
   fi
-  has git && { [[ -z "$(git config --global user.email 2>/dev/null || true)" ]] && printf '  ! Git user.email     未配置\n' || true; }
+  if has git; then
+    [[ -n "$(git config --global user.name 2>/dev/null || true)" ]] || printf '  ! Git user.name     未配置\n'
+    [[ -n "$(git config --global user.email 2>/dev/null || true)" ]] || printf '  ! Git user.email    未配置\n'
+    if [[ -f "$HOME/.ssh/id_ed25519" || -f "$HOME/.ssh/id_rsa" ]]; then printf '  ✓ Git SSH key       found\n';
+    else printf '  - Git SSH key       未配置（如使用 GitHub SSH，请手动生成）\n'; fi
+  fi
 }

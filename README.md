@@ -4,6 +4,33 @@
 
 ## 快速开始
 
+### 前置安装 Git
+
+如果使用 `git clone`，请先安装 Git：
+
+macOS：
+
+```bash
+xcode-select --install
+```
+
+如果已经安装 Homebrew，也可以执行：
+
+```bash
+brew install git
+```
+
+Ubuntu WSL2：
+
+```bash
+sudo apt update
+sudo apt install -y git
+```
+
+如果不想预先安装 Git，也可以从 GitHub 下载 ZIP；运行 `./install.sh` 后，标准 profile 会尝试安装 Git。
+
+### 安装 tu-devkit
+
 ```bash
 git clone https://github.com/<username>/tu-devkit.git
 cd tu-devkit
@@ -117,6 +144,48 @@ shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
 ```
 
 所有安装模块都应具备幂等性，适合重复执行和人工审查。
+
+## Git、SSH 与 GitHub 配置
+
+安装完成后，先检查 Git：
+
+```bash
+tu install git
+tu doctor
+```
+
+如果尚未配置提交身份，请使用自己的信息：
+
+```bash
+git config --global user.name "你的姓名"
+git config --global user.email "你的邮箱"
+git config --global init.defaultBranch main
+```
+
+推荐使用 SSH 连接 GitHub。工具不会自动生成或上传私钥；需要时手动执行：
+
+```bash
+ssh-keygen -t ed25519 -C "你的邮箱"
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+pbcopy < ~/.ssh/id_ed25519.pub          # macOS
+clip.exe < ~/.ssh/id_ed25519.pub        # WSL2 Ubuntu，可复制到 Windows 剪贴板
+```
+
+然后将公钥添加到 GitHub 的 SSH keys 页面，并测试：
+
+```bash
+ssh -T git@github.com
+```
+
+GitHub CLI 登录是另一条独立的认证路径：
+
+```bash
+gh auth login
+gh auth status
+```
+
+不要把 `~/.ssh` 私钥、GitHub token 或 API key 提交到项目中。`tu doctor` 会检查 Git 用户信息、GitHub CLI 登录状态，并在缺少 SSH key 时给出提醒。
 
 ## 目录结构
 
