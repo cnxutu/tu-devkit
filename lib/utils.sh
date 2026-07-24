@@ -6,7 +6,11 @@ parse_flags() { YES=0; VERBOSE=0; for arg in "$@"; do case "$arg" in --yes|-y) Y
 confirm() { [[ "$YES" == 1 ]] && return 0; local answer; read -r -p "$1 [y/N] " answer || true; [[ "$answer" =~ ^[Yy]([Ee][Ss])?$ ]]; }
 run() { [[ "$VERBOSE" == 1 ]] && log_info "+ $*"; "$@"; }
 has() { command -v "$1" >/dev/null 2>&1; }
-version_of() { has "$1" && "$1" --version 2>/dev/null | head -n 1 || true; }
+version_of() {
+  if has "$1"; then "$1" --version 2>/dev/null | head -n 1
+  elif [[ "$1" == nvm ]] && declare -F nvm >/dev/null 2>&1; then nvm --version 2>/dev/null | head -n 1
+  else true; fi
+}
 backup_file() {
   local file="$1"; [[ -e "$file" ]] || return 0
   mkdir -p "$BACKUP_DIR"; local dest="${BACKUP_DIR}/$(basename "$file").$(date +%Y%m%d%H%M%S).bak"

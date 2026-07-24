@@ -83,7 +83,7 @@ install_official_script() {
   confirm "从官方地址安装 ${label}？" || return 0
   tmp="$(mktemp)"
   if curl -fsSL "$url" -o "$tmp" && grep -Eiq '(codex|opencode)' "$tmp"; then
-    sh "$tmp"
+    bash "$tmp"
   else
     log_error "无法验证 ${label} 官方安装脚本，已停止执行"
   fi
