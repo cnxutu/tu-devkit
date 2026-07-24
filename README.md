@@ -1,8 +1,8 @@
 # tu-devkit
 
-`tu-devkit` is a Bash toolkit for initializing and maintaining a reusable AI full-stack development environment on macOS and Ubuntu WSL2.
+`tu-devkit` 是一个基于 Bash 的开发环境初始化与维护工具，面向 macOS 和 Ubuntu WSL2，帮助快速搭建可复用的 AI 全栈开发环境。
 
-## Quick start
+## 快速开始
 
 ```bash
 git clone https://github.com/<username>/tu-devkit.git
@@ -13,48 +13,64 @@ tu init
 tu doctor
 ```
 
-The installer places `tu` in `~/.local/bin`. The tool detects Homebrew or apt, skips commands already available, and asks before installing packages or running official installers.
+安装脚本会把 `tu` 放到 `~/.local/bin`。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。
 
-## Profiles
+## 配置档案
 
-`standard` is the recommended profile and combines base tools, shell setup, Git checks, Java 17/Maven/Gradle, NVM with Node LTS, Python tooling, Docker checks, VS Code checks, and AI CLI checks. Other profiles are `minimal`, `java`, `frontend`, `python-ai`, `rust`, `devops`, and `hardware`. Rust, DevOps, and hardware currently provide a safe scaffold and diagnostics rather than heavy automatic installation.
+推荐使用 `standard`，它包含基础工具、Shell 配置、Git 检查、Java 17/Maven/Gradle、NVM 与 Node LTS、Python 工具、Docker 检查、VS Code 检查和 AI CLI 检查。
 
-## Commands
+其他配置档案：`minimal`、`java`、`frontend`、`python-ai`、`rust`、`devops`、`hardware`。Rust、DevOps 和硬件 profile 当前提供安全的结构和诊断能力，暂不执行重量级自动安装。
 
-```text
-tu init                         interactive profile selection
-tu install standard --yes       install a profile non-interactively
-tu install docker               install/check one module
-tu check                        fast diagnostic report
-tu doctor --verbose             detailed diagnostic report
-tu update                       review and confirm safe updates
-tu list                        list profiles and modules
-tu version                     show version
-```
-
-`tu install` accepts `--yes` for package and installer confirmations. It never creates SSH keys, uploads credentials, configures API keys, or prints secrets. GitHub authentication remains manual via `gh auth login`.
-
-## Safety and troubleshooting
-
-Before changing an existing `.zshrc`, tu creates a timestamped copy under `~/.config/tu-devkit/backups/`. Shell additions are marked and appended only once. NVM is loaded explicitly in non-interactive execution. On WSL2, an installed Docker CLI with an unavailable daemon usually means Docker Desktop WSL integration is disabled or the native daemon is stopped; enable one integration path rather than installing a second Docker environment.
-
-If `code` is missing after installing VS Code, use VS Code's Command Palette and run **Shell Command: Install 'code' command in PATH** on macOS, or install the VS Code WSL integration on Ubuntu WSL2.
-
-## Development
-
-Run the basic tests with `bash tests/run.sh`. If ShellCheck is installed, run `shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh`. All installers are intended to be idempotent and suitable for review before use.
-
-## Directory structure
+## 命令
 
 ```text
-bin/tu       command entry point
-lib/         logging, platform detection, and shared utilities
-scripts/     bootstrap, doctor, and update workflows
-modules/     reserved for future per-module expansion
-profiles/    human-readable profile manifests
-tests/       basic shell tests
+tu init                         交互式选择配置档案
+tu install standard --yes       非交互式安装配置档案
+tu install docker               安装或检查单个模块
+tu check                        快速诊断
+tu doctor --verbose             详细诊断
+tu update                       查看并确认安全更新
+tu list                         列出配置档案和模块
+tu version                      显示版本
 ```
 
-## Roadmap
+`tu install` 支持 `--yes`，用于自动确认软件包和安装器操作。工具不会创建 SSH 密钥、上传凭据、配置 API key 或打印 secrets。GitHub 登录需手动执行 `gh auth login`。
 
-Add package-manager adapters, richer custom module selection, profile-specific VS Code extensions, native Rust/DevOps/hardware installers, CI matrix tests for macOS and WSL2, and a persisted user configuration file.
+## 安全与故障排查
+
+修改已有 `.zshrc` 前，工具会在 `~/.config/tu-devkit/backups/` 创建带时间戳的备份。Shell 配置带有标记，只会追加一次。NVM 会在非交互式执行中显式加载。
+
+在 WSL2 中，如果 Docker CLI 已安装但 daemon 不可用，通常是 Docker Desktop 的 WSL integration 未启用，或 WSL 内的原生 daemon 未启动。请只选择一种 Docker 环境，避免重复安装。
+
+如果安装 VS Code 后找不到 `code` 命令，请在 macOS 的 VS Code Command Palette 中执行 **Shell Command: Install 'code' command in PATH**；Ubuntu WSL2 用户请安装并启用 VS Code WSL integration。
+
+## 开发
+
+运行基础测试：
+
+```bash
+bash tests/run.sh
+```
+
+如果已安装 ShellCheck，可执行：
+
+```bash
+shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
+```
+
+所有安装模块都应具备幂等性，适合重复执行和人工审查。
+
+## 目录结构
+
+```text
+bin/tu       命令入口
+lib/         日志、平台检测和共享工具
+scripts/     初始化、doctor 和 update 流程
+modules/     预留的模块目录
+profiles/    配置档案清单
+tests/       基础 Shell 测试
+```
+
+## 后续计划
+
+增加更多包管理器适配、更丰富的自定义模块选择、按 profile 安装 VS Code 扩展、Rust/DevOps/硬件原生安装器、macOS 与 WSL2 CI 矩阵测试，以及持久化用户配置文件。

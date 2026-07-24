@@ -9,11 +9,11 @@ source "${TU_ROOT}/scripts/doctor.sh"
 source "${TU_ROOT}/scripts/update.sh"
 VERSION="0.1.0"
 usage() { cat <<'EOF'
-Tu DevKit - developer environment bootstrap and maintenance toolkit
+Tu DevKit - 开发环境初始化与维护工具
 
-Usage: tu <command> [profile|module] [--yes] [--verbose]
-Commands: init, install, check, doctor, update, list, version, help
-Profiles: minimal, standard, java, frontend, python-ai, rust, devops, hardware
+用法: tu <命令> [profile|module] [--yes] [--verbose]
+命令: init, install, check, doctor, update, list, version, help
+配置档案: minimal, standard, java, frontend, python-ai, rust, devops, hardware
 EOF
 }
 init_cmd() { select_profile; install_profile "${SELECTED_PROFILE}" "$@"; }
