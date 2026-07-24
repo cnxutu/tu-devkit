@@ -57,10 +57,70 @@ install_git() {
   fi
   has gh && gh auth status >/dev/null 2>&1 || log_warn 'GitHub CLI is not authenticated; run: gh auth login'
 }
+configure_maven_mirrors() {
+  local settings="${HOME}/.m2/settings.xml" block_file tmp mode
+  mkdir -p "${HOME}/.m2"
+  if [[ -f "$settings" ]] && grep -Fq 'tu-devkit maven mirrors' "$settings"; then
+    log_skip 'Maven mirror configuration'
+    return 0
+  fi
+  block_file="$(mktemp)"
+  cat > "$block_file" <<'EOF'
+<!-- tu-devkit maven mirrors -->
+<mirror>
+  <id>tu-devkit-aliyun</id>
+  <name>Alibaba Cloud Maven Public Proxy</name>
+  <mirrorOf>central</mirrorOf>
+  <url>https://maven.aliyun.com/repository/public</url>
+</mirror>
+<!--
+  Alternative mirror: Maven uses the first matching mirror. To switch to Huawei Cloud,
+  comment out the Aliyun mirror above and uncomment this mirror.
+<mirror>
+  <id>tu-devkit-huaweicloud</id>
+  <name>Huawei Cloud Maven Mirror</name>
+  <mirrorOf>central</mirrorOf>
+  <url>https://repo.huaweicloud.com/repository/maven/</url>
+</mirror>
+-->
+EOF
+  if [[ ! -f "$settings" ]]; then
+    cat > "$settings" <<EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+  <mirrors>
+$(sed 's/^/    /' "$block_file")
+  </mirrors>
+</settings>
+EOF
+    rm -f "$block_file"
+    log_info "Created Maven settings with Aliyun mirror and Huawei alternative: $settings"
+    return 0
+  fi
+  backup_file "$settings"
+  tmp="$(mktemp)"
+  if grep -q '<mirrors>' "$settings"; then mode=inside; else mode=settings; fi
+  if [[ "$mode" == inside ]] && command -v perl >/dev/null 2>&1; then
+    TU_XML_BLOCK="$block_file" perl -0pi -e 'my $f=$ENV{"TU_XML_BLOCK"}; open my $h, "<", $f or die $!; local $/; my $b=<$h>; s{</mirrors>}{$b\n</mirrors>} or die "Maven mirrors closing tag not found";' "$settings"
+    rm -f "$block_file"
+  elif [[ "$mode" == settings ]] && command -v perl >/dev/null 2>&1; then
+    { printf '<mirrors>\n'; sed 's/^/  /' "$block_file"; printf '</mirrors>\n'; } > "$tmp"
+    TU_XML_BLOCK="$tmp" perl -0pi -e 'my $f=$ENV{"TU_XML_BLOCK"}; open my $h, "<", $f or die $!; local $/; my $b=<$h>; s{</settings>}{$b\n</settings>} or die "Maven settings closing tag not found";' "$settings"
+    rm -f "$block_file" "$tmp"
+  else
+    rm -f "$block_file" "$tmp"
+    log_warn "无法安全修改 Maven settings.xml（需要 perl 且文件结构需包含 settings/mirrors 标签）"
+    return 1
+  fi
+  log_info "Added Maven mirror configuration to $settings"
+}
 install_java() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then install_packages openjdk-17-jdk maven gradle
   elif [[ "$PACKAGE_MANAGER" == brew ]]; then install_packages openjdk@17 maven gradle
   fi
+  has mvn && configure_maven_mirrors || log_warn 'Maven is unavailable; mirror configuration will run after Maven is installed'
 }
 install_node() {
   local nvm_dir="${NVM_DIR:-$HOME/.nvm}"; mkdir -p "$nvm_dir"

@@ -79,6 +79,34 @@ tu doctor
 | AI Agent | Codex CLI | ✓ | npm、Homebrew 或官方安装器 | OpenAI 代码代理 |
 | AI Agent | OpenCode | ✓ | npm、Homebrew 或官方安装器 | 多 provider AI 代码代理 |
 
+### Maven 镜像仓库
+
+安装 Java profile 或标准版时，如果 Maven 可用，工具会自动配置用户级文件：
+
+```text
+~/.m2/settings.xml
+```
+
+默认启用阿里云公共代理：
+
+```text
+https://maven.aliyun.com/repository/public
+```
+
+配置文件同时保留华为云备用镜像：
+
+```text
+https://repo.huaweicloud.com/repository/maven/
+```
+
+由于 Maven 对同一个仓库只使用第一个匹配的 mirror，脚本默认启用阿里云，并将华为云作为可切换的备用配置写入注释。需要切换时编辑 `~/.m2/settings.xml`，注释阿里云 mirror、取消华为云 mirror 的注释即可。
+
+已有 `settings.xml` 时，工具会先创建备份，并只在不存在 `tu-devkit maven mirrors` 标记时写入；不会覆盖现有账号、私服或其他 Maven 配置。可以用下面的命令确认最终生效配置：
+
+```bash
+mvn help:effective-settings
+```
+
 ### Profile 包含关系
 
 | Profile | 包含模块 | 适用场景 | 当前状态 |
