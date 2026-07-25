@@ -209,9 +209,63 @@ WSL2 还需要在 Windows 侧完成以下一次性设置：
 - 从 WSL 项目目录执行 `code .`，确认 VS Code 能通过 WSL 打开项目。
 - 如果 Docker CLI 存在但 `tu doctor` 显示 daemon 不可用，优先检查 Docker Desktop 是否运行及 WSL integration 是否启用，不要再安装第二套 Docker。
 
+#### WSL2 一次性权限初始化
+
+如果当前账户无法在项目目录创建文件，先预览再执行：
+
+```bash
+tu setup wsl --dry-run
+tu setup wsl --yes
+# 如果要修复已有项目目录：
+tu setup wsl --yes --path ~/workspace/your-project
+```
+
+该命令只处理开发相关目录：
+
+```text
+~/workspace
+~/.local
+~/.config/tu-devkit
+~/.cache
+~/.m2
+~/.npm
+~/.nvm
+```
+
+目录不存在时创建；目录存在但当前用户不可写时，才询问并使用 `sudo chown` 将指定目录归当前用户所有。它不会递归修改 `/`、整个 `/home` 或 `/mnt`，也不会执行 `chmod 777`。
+
+建议把代码放在 `~/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\home\<用户名>\workspace` 访问该目录。
+
+如果手动把用户加入原生 Docker Engine 的 `docker` 组，需要重新打开 WSL：
+
+```bash
+sudo usermod -aG docker "$USER"
+exit
+# 在 PowerShell 中：wsl --shutdown
+```
+
+Docker Desktop WSL Integration 模式通常不需要加入 `docker` 组，脚本只提醒，不会默认修改该组。
+
 ### 安装完成的判断
 
 `tu doctor` 中 Codex CLI、OpenCode、Node、Git、Java、Python 和 Docker CLI 应显示 `✓`。Docker daemon 和 VS Code Remote - WSL 属于宿主机/集成状态，可能需要按上面的说明手动处理。账号登录成功后，`tu ai login` 才算完成。
+
+### macOS 一次性权限建议
+
+macOS 不需要对整个用户目录执行递归授权。建议统一使用用户目录下的开发目录：
+
+```bash
+mkdir -p ~/workspace
+ls -ld ~/workspace
+```
+
+如果历史上曾用 `sudo` 创建项目文件，只修复明确的开发目录：
+
+```bash
+sudo chown -R "$(id -un):$(id -gn)" ~/workspace
+```
+
+不要使用 `sudo npm install`、`sudo pnpm install` 或 `sudo mvn`；Node 使用 NVM，项目和缓存放在用户目录。若项目放在 Desktop/Documents，macOS 可能触发隐私访问授权，推荐迁移到 `~/workspace`，或在系统设置中只给终端/VS Code 必要的访问权限。
 
 ## 开发
 
