@@ -8,7 +8,8 @@ setup_wsl_main() {
     return 1
   fi
 
-  local workspace="${TU_WSL_WORKSPACE:-${HOME}/workspace}" arg
+  local data_root="${TU_WSL_DATA_ROOT:-/data}"
+  local workspace="${TU_WSL_WORKSPACE:-${data_root}/workspace}" arg
   while (($#)); do
     case "$1" in
       --path) [[ -n "${2:-}" ]] || { log_error '--path 需要目录参数'; return 2; }; workspace="$2"; shift 2;;
@@ -18,13 +19,26 @@ setup_wsl_main() {
   local user_name="${USER:-$(id -un)}" group_name uid gid path test_file
   group_name="$(id -gn)"; uid="$(id -u)"; gid="$(id -g)"
   if [[ "$DRY_RUN" == 1 ]]; then
-    log_info "[DRY-RUN] prepare WSL workspace and user-owned directories under $workspace"
-    log_info "[DRY-RUN] repair ownership only for: $workspace, ~/.local, ~/.config/tu-devkit, ~/.cache, ~/.m2, ~/.npm, ~/.nvm"
+    log_info "[DRY-RUN] prepare WSL data root and workspace: $data_root, $workspace"
+    log_info "[DRY-RUN] repair ownership only for: $data_root (directory itself), $workspace, ~/.local, ~/.config/tu-devkit, ~/.cache, ~/.m2, ~/.npm, ~/.nvm"
     return 0
   fi
   if [[ "$workspace" == /mnt/* ]]; then
     log_warn "当前工作区位于 Windows 挂载盘：$workspace"
-    log_warn 'Linux 工具链建议使用 ~/workspace，避免 node_modules、Git 和文件权限/性能问题'
+    log_warn 'Linux 工具链建议使用 /data/workspace，避免 node_modules、Git 和文件权限/性能问题'
+  fi
+
+  if [[ ! -e "$data_root" ]]; then
+    if mkdir -p "$data_root" 2>/dev/null; then log_ok "Created $data_root"
+    elif confirm "使用 sudo 创建并将 $data_root 目录归当前用户所有？"; then
+      run sudo install -d -o "$uid" -g "$gid" -m 0755 "$data_root"
+    else log_warn "无法创建 $data_root"; fi
+  fi
+  if [[ -e "$data_root" && ! -w "$data_root" ]]; then
+    log_warn "当前用户没有写权限：$data_root"
+    if confirm "仅将 $data_root 目录本身归 ${user_name}:${group_name}（不修改其中已有文件）？"; then
+      run sudo chown "${uid}:${gid}" "$data_root"
+    fi
   fi
 
   local paths=(
@@ -69,5 +83,5 @@ setup_wsl_main() {
     log_warn '当前用户不在 docker group；Docker Desktop WSL integration 通常不需要该组'
     log_info '仅使用 WSL 内原生 Docker Engine 时，才考虑：sudo usermod -aG docker "$USER"'
   fi
-  log_info 'WSL 权限初始化完成；项目建议放在 ~/workspace，而不是 /mnt/c/...'
+  log_info 'WSL 权限初始化完成；项目建议放在 /data/workspace，而不是 /mnt/c/...'
 }

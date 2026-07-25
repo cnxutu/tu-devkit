@@ -217,13 +217,20 @@ WSL2 还需要在 Windows 侧完成以下一次性设置：
 tu setup wsl --dry-run
 tu setup wsl --yes
 # 如果要修复已有项目目录：
-tu setup wsl --yes --path ~/workspace/your-project
+tu setup wsl --yes --path /data/workspace/your-project
+```
+
+如果连仓库目录本身都无法读取或执行安装脚本，先只修复这个明确的仓库目录，再重新运行安装器：
+
+```bash
+sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 ```
 
 该命令只处理开发相关目录：
 
 ```text
-~/workspace
+/data
+/data/workspace
 ~/.local
 ~/.config/tu-devkit
 ~/.cache
@@ -234,7 +241,7 @@ tu setup wsl --yes --path ~/workspace/your-project
 
 目录不存在时创建；目录存在但当前用户不可写时，才询问并使用 `sudo chown` 将指定目录归当前用户所有。它不会递归修改 `/`、整个 `/home` 或 `/mnt`，也不会执行 `chmod 777`。
 
-建议把代码放在 `~/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\home\<用户名>\workspace` 访问该目录。
+建议把代码放在 `/data/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\data\workspace` 访问该目录。
 
 如果手动把用户加入原生 Docker Engine 的 `docker` 组，需要重新打开 WSL：
 
