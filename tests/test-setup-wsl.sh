@@ -10,6 +10,7 @@ HOME="$test_home" TU_WSL_DATA_ROOT="$data_root" bash -c '
   source "'$ROOT'/lib/utils.sh"
   source "'$ROOT'/scripts/setup-wsl.sh"
   detect_platform() { OS=linux; IS_WSL=1; PACKAGE_MANAGER=apt; }
+  sudo() { "$@"; }
   YES=1
   setup_wsl_main --yes
   [[ -d "$TU_WSL_DATA_ROOT" && -d "$TU_WSL_DATA_ROOT/workspace" ]]

@@ -239,7 +239,7 @@ sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 ~/.nvm
 ```
 
-目录不存在时创建；目录存在但当前用户不可写时，才询问并使用 `sudo chown` 将指定目录归当前用户所有。它不会递归修改 `/`、整个 `/home` 或 `/mnt`，也不会执行 `chmod 777`。
+目录不存在时创建；`/data` 存在时会询问是否将 `/data` 及其全部内容递归归当前用户所有，具体项目目录也会按需修复。脚本保留现有权限模式，不执行 `chmod 777`，也不会递归修改 `/`、整个 `/home` 或 `/mnt`。如果 `/data` 中存放其他用户或系统服务数据，请先备份并确认归属影响。
 
 建议把代码放在 `/data/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\data\workspace` 访问该目录。
 
