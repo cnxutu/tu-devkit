@@ -27,13 +27,13 @@ sudo apt update
 sudo apt install -y git
 ```
 
-如果不想预先安装 Git，也可以从 GitHub 下载 ZIP；运行 `./install.sh` 后，标准 profile 会尝试安装 Git。
+如果不想预先安装 Git，也可以从 GitHub 下载 ZIP；运行 AI 初始化模块的 `./install.sh` 后，标准 profile 会尝试安装 Git。
 
-### 安装 tu-devkit
+### 安装 AI 开发环境初始化模块
 
 ```bash
 git clone https://github.com/<username>/tu-devkit.git
-cd tu-devkit
+cd tu-devkit/ai-dev-environment-init
 chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -49,7 +49,7 @@ tu doctor
 
 推荐使用 `standard`，它包含基础工具、Shell 配置、Git 检查、Java 17/Maven/Gradle、NVM 与 Node LTS、Python 工具、Docker 检查、VS Code 检查和 AI CLI 检查。
 
-其他配置档案：`minimal`、`java`、`frontend`、`python-ai`、`rust`、`devops`、`hardware`。Rust、DevOps 和硬件 profile 当前提供安全的结构和诊断能力，暂不执行重量级自动安装。
+其他配置档案：`minimal`、`java`、`frontend`、`python-ai`、`ai-dev-environment`、`rust`、`devops`、`hardware`。`ai-dev-environment` 专注于 AI 项目初始化；Rust、DevOps 和硬件 profile 当前提供安全的结构和诊断能力，暂不执行重量级自动安装。
 
 ### 标准版工具总览
 
@@ -116,6 +116,7 @@ mvn help:effective-settings
 | `java` | 基础、Shell、Git、Java、Docker、VS Code | Java 后端 | 已实现 |
 | `frontend` | 基础、Shell、Git、Node、VS Code | Node.js 前端 | 已实现 |
 | `python-ai` | 基础、Shell、Git、Python、AI、VS Code | Python 和 AI | 已实现 |
+| `ai-dev-environment` | 基础、Shell、Git、Node、Python、AI、VS Code | AI 项目初始化 | 已实现 |
 | `rust` | 基础、Shell、Git、Rust、VS Code | Rust 开发 | 结构已提供，安装器待完善 |
 | `devops` | 基础、Shell、Git、Docker、DevOps、VS Code | DevOps 工具链 | 结构已提供，安装器待完善 |
 | `hardware` | 基础、Shell、Git、Hardware、VS Code | 硬件与 IoT | 结构已提供，安装器待完善 |
@@ -143,6 +144,7 @@ tu doctor --strict              严格诊断，问题时返回非零退出码
 tu install standard --dry-run  只展示安装/修改计划，不写入环境
 tu update                       查看并确认安全更新
 tu list                         列出配置档案和模块
+tu setup ai --yes               初始化 AI 开发环境
 tu ai login                     依次配置 Codex 和 OpenCode 账号
 tu ai codex                     打开 Codex CLI
 tu ai opencode                  打开 OpenCode
@@ -178,9 +180,22 @@ tu ai login
 
 脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。
 
+### AI 项目初始化
+
+`ai-dev-environment-init/` 是 AI 开发环境的功能包，包含命令入口、配置档案、安装流程和测试。使用以下命令初始化适合 AI 项目的基础环境：
+
+```bash
+tu setup ai --dry-run
+tu setup ai --yes
+tu ai login
+```
+
+该环境安装或检查 Git、Node.js、Python、uv、Codex CLI、OpenCode 与 VS Code；不包含 Java 和 Docker。需要完整 AI 全栈环境时，仍使用 `tu install standard --yes`。
+
 ### macOS
 
 ```bash
+cd ai-dev-environment-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 tu install standard --yes
@@ -195,6 +210,7 @@ tu ai login
 在 Ubuntu WSL2 终端中执行：
 
 ```bash
+cd ai-dev-environment-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 tu install standard --yes
@@ -279,20 +295,20 @@ sudo chown -R "$(id -un):$(id -gn)" ~/workspace
 运行基础测试：
 
 ```bash
-bash tests/run.sh
+bash ai-dev-environment-init/tests/run.sh
 ```
 
 如果已安装 ShellCheck，可执行：
 
 ```bash
-shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
+shellcheck ai-dev-environment-init/install.sh ai-dev-environment-init/bin/tu ai-dev-environment-init/lib/*.sh ai-dev-environment-init/scripts/*.sh ai-dev-environment-init/tests/*.sh
 ```
 
 仓库 CI 会在 Ubuntu 和 macOS 上运行基础测试、Bash 语法检查和 ShellCheck。
 
 所有安装模块都应具备幂等性，适合重复执行和人工审查。
 
-Profile 的模块清单位于 `profiles/*.conf`，`tu list` 和 `tu install` 会直接读取这些文件。新增一个 profile 时，先添加对应的 `.conf` 文件；如果使用现有模块即可生效，若新增工具类别，再在 `scripts/bootstrap.sh` 的 `install_module` 中补充安装逻辑和测试。
+Profile 的模块清单位于 `ai-dev-environment-init/profiles/*.conf`，`tu list` 和 `tu install` 会直接读取这些文件。新增一个 profile 时，先添加对应的 `.conf` 文件；如果使用现有模块即可生效，若新增工具类别，再在 `ai-dev-environment-init/scripts/bootstrap.sh` 的 `install_module` 中补充安装逻辑和测试。
 
 ## Git、SSH 与 GitHub 配置
 
@@ -339,12 +355,14 @@ gh auth status
 ## 目录结构
 
 ```text
-bin/tu       命令入口
-lib/         日志、平台检测和共享工具
-scripts/     初始化、doctor 和 update 流程
-modules/     预留的模块目录
-profiles/    配置档案清单
-tests/       基础 Shell 测试
+ai-dev-environment-init/                      AI 开发环境初始化功能包
+  install.sh                                  模块安装入口
+  bin/tu                                      命令入口
+  lib/                                        日志、平台检测和共享工具
+  scripts/                                    初始化、doctor 和 update 流程
+  profiles/                                   配置档案清单
+  modules/                                    AI 工具模块预留目录
+  tests/                                      模块 Shell 测试
 ```
 
 ## 后续计划
