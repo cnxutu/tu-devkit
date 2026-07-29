@@ -8,3 +8,5 @@
 - [AI 开发环境初始化](./ai-dev-env-init/README.md)：`tu` 命令和开发环境安装说明。
 
 根目录只提供导航。各模块的安装、使用和设计说明均在对应二级目录内维护。
+
+本目录的 [AGENTS.md](AGENTS.md) 是唯一的 AI 协作入口，它会直接将 Codex 引导至 `ai-guidance/`；所有 AI 约束与产品知识均在该模块统一维护。
