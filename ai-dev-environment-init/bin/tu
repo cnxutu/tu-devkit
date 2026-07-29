@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+TU_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${TU_ROOT}/lib/logging.sh"
+source "${TU_ROOT}/lib/platform.sh"
+source "${TU_ROOT}/lib/utils.sh"
+source "${TU_ROOT}/scripts/bootstrap.sh"
+source "${TU_ROOT}/scripts/doctor.sh"
+source "${TU_ROOT}/scripts/update.sh"
+source "${TU_ROOT}/scripts/setup-wsl.sh"
+source "${TU_ROOT}/scripts/setup-ai.sh"
+VERSION="0.1.0"
+usage() { cat <<'EOF'
+Tu DevKit - 开发环境初始化与维护工具
+
+用法: tu <命令> [profile|module] [--yes] [--verbose] [--strict] [--dry-run]
+命令: init, install, check, doctor, update, list, ai, setup, version, help
+配置档案: minimal, standard, java, frontend, python-ai, ai-dev-environment, rust, devops, hardware
+EOF
+}
+init_cmd() {
+  select_profile
+  [[ "${SELECTED_PROFILE}" == custom || "${SELECTED_PROFILE}" == doctor ]] && return 0
+  install_profile "${SELECTED_PROFILE}" "$@"
+}
+main() {
+  local command="${1:-help}"; shift || true
+  case "$command" in
+    init) init_cmd "$@" ;;
+    install) local target="${1:-standard}"; shift || true; install_target "$target" "$@" ;;
+    check|doctor) doctor_main "$@" ;;
+    update) update_main "$@" ;;
+    ai) ai_main "$@" ;;
+    setup)
+      local target="${1:-help}"; shift || true
+      case "$target" in
+        wsl) setup_wsl_main "$@" ;;
+        ai) setup_ai_main "$@" ;;
+        *) printf '环境初始化命令:\n  tu setup ai [--yes] [--dry-run]     初始化 AI 开发环境\n  tu setup wsl [--yes] [--path DIR]    修复 Ubuntu WSL2 开发目录和权限\n';;
+      esac
+      ;;
+    list) list_profiles ;;
+    version|--version|-v) printf 'tu-devkit %s\n' "$VERSION" ;;
+    help|--help|-h) usage ;;
+    *) log_error "Unknown command: $command"; usage; return 2 ;;
+  esac
+}
+main "$@"
