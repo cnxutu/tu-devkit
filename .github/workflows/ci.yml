@@ -44,3 +44,7 @@ jobs:
       - name: Validate AI guidance
         shell: bash
         run: bash ai-guidance/tests/test-guidance-validation.sh
+
+      - name: Validate shared Codex plugin
+        shell: bash
+        run: bash plugins/ai-guidance-workflows/tests/test-plugin.sh
