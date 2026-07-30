@@ -150,6 +150,7 @@ tu setup ai --yes               初始化 AI 开发环境
 tu ai login                     依次配置 Codex 和 OpenCode 账号
 tu ai codex                     打开 Codex CLI
 tu ai opencode                  打开 OpenCode
+tu ai openrouter                在 OpenCode 官方登录流程中配置 OpenRouter
 tu version                      显示版本
 ```
 
@@ -182,6 +183,22 @@ tu ai login
 
 脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。
 
+### 选择 AI 工具
+
+#### 只使用 Codex
+
+执行 `tu ai codex`，首次运行时选择 ChatGPT 登录。此方式不需要 OpenRouter，适合希望直接使用 OpenAI 代码代理的场景。
+
+#### OpenCode + OpenRouter
+
+先执行 `tu install standard --yes`，再执行 `tu ai openrouter`。命令会打开 OpenCode 的官方 provider 登录流程；请选择 OpenRouter，并自行输入从 OpenRouter 账户获得的 API Key。OpenRouter 的模型调用可能产生费用，请在使用前确认账户额度和模型价格。
+
+#### 只使用已配置的 OpenCode
+
+执行 `tu ai opencode`。它只启动 OpenCode，不修改 provider，也不要求配置 OpenRouter。
+
+OpenRouter API Key 属于敏感凭据：不要把它写入项目文件、Git 配置、Shell 历史或仓库。`tu ai openrouter` 不接收、保存或回显该 Key；认证配置由 OpenCode 的官方交互流程处理。
+
 ### AI 项目初始化
 
 当前文件包 `ai-dev-env-init/` 包含命令入口、配置档案、安装流程和测试。使用以下命令初始化适合 AI 项目的基础环境：
@@ -208,6 +225,8 @@ tu ai login
 标准版优先使用 NVM 管理 Node.js；OpenCode 和 Codex 在 npm 可用时使用 npm 安装，缺少 npm 时分别回退到官方安装方式或 Homebrew。
 
 ### Windows 11/10 + Ubuntu WSL2
+
+首次安装或重装 Ubuntu，并希望将 WSL 虚拟磁盘放到 D 盘时，请先阅读 [Windows WSL2 与 Ubuntu 前置环境](docs/windows-wsl2-setup.md)。
 
 在 Ubuntu WSL2 终端中执行：
 
@@ -297,13 +316,13 @@ sudo chown -R "$(id -un):$(id -gn)" ~/workspace
 运行基础测试：
 
 ```bash
-bash tests/run.sh
+bash ai-dev-env-init/tests/run.sh
 ```
 
 如果已安装 ShellCheck，可执行：
 
 ```bash
-shellcheck install.sh bin/tu lib/*.sh scripts/*.sh tests/*.sh
+shellcheck ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh
 ```
 
 仓库 CI 会在 Ubuntu 和 macOS 上运行基础测试、Bash 语法检查和 ShellCheck。

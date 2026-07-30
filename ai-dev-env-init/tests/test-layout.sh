@@ -9,6 +9,8 @@ for required in bin lib profiles scripts tests; do
 done
 
 [[ -x "${PACKAGE_ROOT}/bin/tu" ]]
+[[ -x "${PACKAGE_ROOT}/install.sh" ]]
+[[ -x "${PACKAGE_ROOT}/tests/run.sh" ]]
 [[ -f "${PACKAGE_ROOT}/install.sh" ]]
 [[ -f "${PACKAGE_ROOT}/scripts/bootstrap.sh" ]]
 grep -Fq 'ai-dev-env-init' "${ROOT}/README.md"

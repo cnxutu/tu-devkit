@@ -187,6 +187,7 @@ AI 工具命令：
   tu ai login       依次启动 Codex 和 OpenCode 登录流程
   tu ai codex       打开 Codex CLI
   tu ai opencode    打开 OpenCode TUI
+  tu ai openrouter  启动 OpenCode 登录并选择 OpenRouter provider
   tu ai status      检查 AI CLI 是否已安装
 EOF
       ;;
@@ -199,6 +200,11 @@ EOF
       ;;
     codex) has codex && exec codex || { log_error 'Codex CLI 未安装'; return 1; } ;;
     opencode) has opencode && exec opencode || { log_error 'OpenCode 未安装'; return 1; } ;;
+    openrouter)
+      has opencode || { log_error 'OpenCode 未安装，请先运行: tu install standard --yes'; return 1; }
+      log_info '即将启动 OpenCode provider 登录；请选择 OpenRouter，并在官方界面中自行输入 API Key。'
+      opencode auth login
+      ;;
     *) log_error "未知 AI 操作: $action"; ai_main help; return 2 ;;
   esac
 }
