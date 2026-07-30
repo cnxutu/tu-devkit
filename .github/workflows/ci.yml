@@ -40,3 +40,7 @@ jobs:
       - name: Run ShellCheck
         shell: bash
         run: shellcheck ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh
+
+      - name: Validate AI guidance
+        shell: bash
+        run: bash ai-guidance/tests/test-guidance-validation.sh

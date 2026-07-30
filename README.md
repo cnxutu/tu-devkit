@@ -9,4 +9,4 @@
 
 根目录只提供导航。各模块的安装、使用和设计说明均在对应二级目录内维护。
 
-本目录的 [AGENTS.md](AGENTS.md) 是唯一的 AI 协作入口，它会直接将 Codex 引导至 `ai-guidance/`；所有 AI 约束与产品知识均在该模块统一维护。
+本目录的 [AGENTS.md](AGENTS.md) 是唯一的 AI 协作入口，它会直接将 Codex 引导至 `ai-guidance/`；公共 AI 约束与产品知识均在该模块统一维护。
