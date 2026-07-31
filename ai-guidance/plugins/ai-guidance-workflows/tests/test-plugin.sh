@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
-PLUGIN_ROOT="${ROOT}/plugins/ai-guidance-workflows"
-MARKETPLACE="${ROOT}/.agents/plugins/marketplace.json"
+MARKETPLACE_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+PLUGIN_ROOT="${MARKETPLACE_ROOT}/plugins/ai-guidance-workflows"
+MARKETPLACE="${MARKETPLACE_ROOT}/.agents/plugins/marketplace.json"
 
 python3 -m json.tool "${PLUGIN_ROOT}/.codex-plugin/plugin.json" >/dev/null
 python3 -m json.tool "${MARKETPLACE}" >/dev/null
 
 grep -Fq '"name": "ai-guidance-workflows"' "${PLUGIN_ROOT}/.codex-plugin/plugin.json"
 grep -Fq '"name": "tu-devkit"' "${MARKETPLACE}"
+grep -Fq '"path": "./plugins/ai-guidance-workflows"' "${MARKETPLACE}"
 
 for skill in tu-diagnosing-spring-backend-incidents tu-loading-device-inspection-cross-service-context; do
   skill_file="${PLUGIN_ROOT}/skills/${skill}/SKILL.md"
