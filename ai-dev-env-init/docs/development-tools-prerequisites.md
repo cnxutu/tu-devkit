@@ -94,12 +94,23 @@ export PATH="$HOME/.local/bin:$PATH"
 随后选择一种环境安装方式：
 
 ~~~bash
-tu install standard --dry-run
+# Java + Node + Codex（推荐起步）
+tu install lite --dry-run
+tu install lite --yes
+tu check lite
+
+# 需要 Python/uv 或 OpenCode 时，改用标准版
 tu install standard --yes
-tu doctor
+tu check standard
+
+# 需要 Rust、Kubernetes CLI 与 OpenRouter 登录入口时，使用最终版
+tu install ultimate --yes
+tu check ultimate
+# 然后在 OpenCode 官方登录界面完成 OpenRouter provider 登录
+tu ai openrouter
 ~~~
 
-`standard` 会依次安装或检查 Java、Maven、Node、Python 与 AI 工具。下载 NVM、uv 或官方安装器时会显示当前阶段、进度、60 秒连接超时、300 秒总超时和最多 3 次重试。若网络仍不可用或误按 `Ctrl+C` 中断，可直接重新执行同一条 `tu install standard --yes`：已完成的包、Maven 配置和 NVM/Node 安装会被识别并跳过或补全，无需删除 `~/.m2`、`~/.nvm` 或其他用户目录。
+`lite` 提供 Java、Maven、Node 和 Codex；`standard` 在此基础上加入 Python/uv 与 OpenCode；`ultimate` 再加入 Rust、Cargo、rustfmt、Clippy、Kubernetes CLI 和 OpenRouter 登录入口。OpenRouter 的 API Key 必须由用户在 `tu ai openrouter` 打开的官方界面中输入，脚本不会保存该凭据。下载 NVM 或 AI 官方安装器时会显示当前阶段、进度、60 秒连接超时、300 秒总超时和最多 3 次重试。`standard` 与 `ultimate` 中的 uv 默认通过 `pipx` 安装并显示 pip 下载进度，设置 60 秒请求超时和 3 次重试；仅在 `pipx` 不可用时回退到官方安装器。若网络仍不可用或误按 `Ctrl+C` 中断，可直接重新执行同一档位的 `tu install <profile> --yes`：已完成的包、Maven 配置和 NVM/Node 安装会被识别并跳过或补全，无需删除 `~/.m2`、`~/.nvm` 或其他用户目录。
 
 或者只准备 AI 项目基础环境：
 

@@ -161,10 +161,14 @@ install_python() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then ensure_packages python3:python3 python3-pip:python3-pip pipx:pipx
   elif [[ "$PACKAGE_MANAGER" == brew ]]; then ensure_packages python3:python pipx:pipx
   fi
-  if [[ "$DRY_RUN" == 1 ]]; then log_info '[DRY-RUN] install uv with the official installer if missing'; return 0; fi
-  if ! has uv && confirm 'Install uv using the official installer?'; then
+  if [[ "$DRY_RUN" == 1 ]]; then log_info '[DRY-RUN] install uv with pipx, falling back to the official installer if needed'; return 0; fi
+  if ! has uv && has pipx && confirm 'Install uv with pipx?'; then
+    log_info 'Installing uv with pipx (pip progress; request timeout: 60s; retries: 3)'
+    PIP_PROGRESS_BAR=on PIP_DEFAULT_TIMEOUT=60 PIP_RETRIES=3 pipx install uv
+  elif ! has uv && confirm 'Install uv using the official installer?'; then
     local tmp; tmp="$(mktemp)"
     download_with_retry 'https://astral.sh/uv/install.sh' "$tmp" 'uv installer' || { rm -f "$tmp"; return 1; }
+    log_info 'Running the uv official installer'
     sh "$tmp"
     rm -f "$tmp"
   fi
@@ -175,6 +179,20 @@ install_docker() {
     log_info 'macOS Docker support uses Docker Desktop; the daemon runs outside the shell.'
     confirm 'Install Docker Desktop with Homebrew Cask?' && run brew install --cask docker || log_warn 'Skipped Docker Desktop installation'
   else log_warn '请安装 Docker Desktop（macOS/WSL2）或 Docker Engine（Linux），然后重新运行 tu doctor'; fi
+}
+install_rust() {
+  if [[ "$PACKAGE_MANAGER" == apt ]]; then
+    ensure_packages rustc:rustc cargo:cargo rustfmt:rustfmt clippy-driver:rust-clippy
+  elif [[ "$PACKAGE_MANAGER" == brew ]] && ! has cargo; then
+    install_packages rust
+  fi
+}
+install_devops() {
+  if [[ "$PACKAGE_MANAGER" == apt ]]; then
+    ensure_packages kubectl:kubernetes-client
+  elif [[ "$PACKAGE_MANAGER" == brew ]]; then
+    ensure_packages kubectl:kubernetes-cli
+  fi
 }
 install_vscode() { has code && log_skip 'VS Code code command' || log_warn 'VS Code code command unavailable; install VS Code and enable Shell Command: Install code command in PATH'; }
 install_official_script() {
@@ -191,18 +209,28 @@ install_official_script() {
   fi
   rm -f "$tmp"
 }
-install_ai() {
+install_codex() {
   if ! has codex; then
     if has npm && confirm '通过 @openai/codex npm 包安装 Codex CLI？'; then run npm install --global @openai/codex
     elif [[ "$OS" == macos ]] && has brew && confirm '通过 Homebrew Cask 安装 Codex CLI？'; then run brew install --cask codex
     else install_official_script 'https://chatgpt.com/codex/install.sh' 'Codex CLI'; fi
   else log_skip 'Codex CLI'; fi
+}
+install_opencode() {
   if ! has opencode; then
     if has npm && confirm '通过 opencode-ai npm 包安装 OpenCode？'; then run npm install --global opencode-ai
     elif [[ "$OS" == macos ]] && has brew && confirm '通过 Homebrew 安装 OpenCode？'; then run brew install anomalyco/tap/opencode
     else install_official_script 'https://opencode.ai/install' 'OpenCode'; fi
   else log_skip 'OpenCode'; fi
 }
+install_openrouter() {
+  if has opencode; then
+    log_info 'OpenRouter requires an interactive OpenCode provider login; run: tu ai openrouter'
+  else
+    log_warn 'OpenRouter requires OpenCode; install the standard or ultimate profile first'
+  fi
+}
+install_ai() { install_codex; install_opencode; }
 ai_main() {
   local action="${1:-help}"
   case "$action" in
@@ -232,7 +260,7 @@ EOF
     *) log_error "未知 AI 操作: $action"; ai_main help; return 2 ;;
   esac
 }
-install_module() { case "$1" in base|minimal) install_base;; shell) install_shell;; git) install_git;; java) install_java;; node|frontend) install_node;; python|python-ai) install_python;; docker) install_docker;; vscode) install_vscode;; ai|standard) install_ai;; rust|devops|hardware) log_warn "$1 profile is scaffolded; no automatic installer yet";; *) log_error "Unknown module/profile: $1"; return 2;; esac; }
+install_module() { case "$1" in base|minimal) install_base;; shell) install_shell;; git) install_git;; java) install_java;; node|frontend) install_node;; python|python-ai) install_python;; docker) install_docker;; rust) install_rust;; devops) install_devops;; vscode) install_vscode;; codex) install_codex;; opencode) install_opencode;; openrouter) install_openrouter;; ai) install_ai;; hardware) log_warn 'hardware profile is scaffolded; no automatic installer yet';; *) log_error "Unknown module/profile: $1"; return 2;; esac; }
 profile_modules() {
   local profile_file="${PROFILE_DIR}/$1.conf"
   [[ -f "$profile_file" ]] || { log_error "Unknown profile: $1"; return 2; }
@@ -251,19 +279,21 @@ install_target() {
 }
 select_profile() { cat <<'EOF'
 Tu DevKit
-1. 标准 AI 全栈环境
-2. 最小基础环境
-3. Java 后端
-4. 前端开发
-5. Python 与 AI
-6. Rust 开发
-7. DevOps
-8. 硬件与 IoT
-9. 自定义选择
-10. 仅运行诊断
+1. 轻量 Java + Node + Codex
+2. 标准版（轻量版 + Python/uv + OpenCode）
+3. 最终版（标准版 + Rust + DevOps）
+4. 最小基础环境
+5. Java 后端
+6. 前端开发
+7. Python 与 AI
+8. Rust 开发
+9. DevOps
+10. 硬件与 IoT
+11. 自定义选择
+12. 仅运行诊断
 EOF
-  local choice; read -r -p '请选择安装模式 [1-10]: ' choice
-  case "$choice" in 1) SELECTED_PROFILE=standard;;2) SELECTED_PROFILE=minimal;;3) SELECTED_PROFILE=java;;4) SELECTED_PROFILE=frontend;;5) SELECTED_PROFILE=python-ai;;6) SELECTED_PROFILE=rust;;7) SELECTED_PROFILE=devops;;8) SELECTED_PROFILE=hardware;;10) SELECTED_PROFILE=doctor;;9) SELECTED_PROFILE=custom;;*) log_error '选择无效'; return 2;; esac
+  local choice; read -r -p '请选择安装模式 [1-12]: ' choice
+  case "$choice" in 1) SELECTED_PROFILE=lite;;2) SELECTED_PROFILE=standard;;3) SELECTED_PROFILE=ultimate;;4) SELECTED_PROFILE=minimal;;5) SELECTED_PROFILE=java;;6) SELECTED_PROFILE=frontend;;7) SELECTED_PROFILE=python-ai;;8) SELECTED_PROFILE=rust;;9) SELECTED_PROFILE=devops;;10) SELECTED_PROFILE=hardware;;11) SELECTED_PROFILE=custom;;12) SELECTED_PROFILE=doctor;;*) log_error '选择无效'; return 2;; esac
   [[ "$SELECTED_PROFILE" == custom ]] && { read -r -p '请输入以空格分隔的模块（如 base node python）: ' CUSTOM_MODULES; for m in $CUSTOM_MODULES; do install_module "$m"; done; return 0; }
   [[ "$SELECTED_PROFILE" == doctor ]] && { doctor_main; return 0; }
 }
@@ -274,7 +304,7 @@ list_profiles() {
     [[ -f "$profile_file" ]] || continue
     profile="$(basename "$profile_file" .conf)"
     modules="$(profile_modules "$profile" | paste -sd ',' - | sed 's/,/, /g')"
-    printf '  %-12s %s\n' "$profile" "$modules"
+  printf '  %-12s %s\n' "$profile" "$modules"
   done
-  printf '模块: base, shell, git, java, node, python, docker, vscode, ai\n'
+  printf '模块: base, shell, git, java, node, python, docker, vscode, codex, opencode, openrouter, ai\n'
 }

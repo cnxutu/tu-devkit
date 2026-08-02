@@ -16,7 +16,8 @@ Tu DevKit - 开发环境初始化与维护工具
 
 用法: tu <命令> [profile|module] [--yes] [--verbose] [--strict] [--dry-run]
 命令: init, install, check, doctor, update, list, ai, setup, version, help
-配置档案: minimal, standard, java, frontend, python-ai, ai-dev-environment, rust, devops, hardware
+配置档案: lite, standard, ultimate, minimal, java, frontend, python-ai, ai-dev-environment, rust, devops, hardware
+诊断示例: tu check lite | tu check standard | tu check ultimate --strict
 EOF
 }
 init_cmd() {

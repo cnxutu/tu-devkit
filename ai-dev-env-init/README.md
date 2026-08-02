@@ -33,22 +33,22 @@ chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 tu init
-tu doctor
+tu check lite
 ```
 
 安装脚本会把完整运行包放到 `~/.local/share/tu-devkit`，并把 `tu` wrapper 放到 `~/.local/bin`；当前 PATH 中存在可写目录时还会同步放置 wrapper，因此 macOS Homebrew 环境通常无需重新打开终端即可执行。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。如果当前没有可写的 PATH 目录，安装器会提示执行 `source ~/.zshrc` 或 `source ~/.bashrc`。
 
-运行 `tu install standard --yes` 时，NVM、uv 和 AI 官方安装器的下载会显示阶段与进度，并设置 60 秒连接超时、300 秒总超时和重试。若网络异常或误按 `Ctrl+C`，可直接重新执行相同命令；已完成的系统包、Maven 配置和 NVM/Node 安装会跳过或补全，不需要删除用户目录后重来。
+运行 `tu install lite|standard|ultimate --yes` 时，NVM 和 AI 官方安装器的下载会显示阶段与进度，并设置 60 秒连接超时、300 秒总超时和重试。`standard` 与 `ultimate` 中的 uv 默认使用 `pipx` 安装，显示 pip 下载进度，并使用 60 秒请求超时与 3 次重试；只有 `pipx` 不可用时才回退到官方安装器。若网络异常或误按 `Ctrl+C`，可直接重新执行相同命令；已完成的系统包、Maven 配置和 NVM/Node 安装会跳过或补全，不需要删除用户目录后重来。
 
 支持的目标环境是 macOS，以及 Windows 11/10 中的 Ubuntu WSL2。Windows 原生 PowerShell 不在本项目范围内；请在 WSL2 Ubuntu 终端中运行本工具。
 
-### 标准版后：最短 Codex 开发路径
+### 轻量版后：最短 Codex 开发路径
 
 首次安装或中断后恢复时，只需逐行执行：
 
 ```bash
-tu install standard --yes
-tu check
+tu install lite --yes
+tu check lite
 tu ai codex
 ```
 
@@ -56,7 +56,7 @@ tu ai codex
 
 ```mermaid
 flowchart LR
-    A["tu install standard --yes"] --> B["tu check"]
+    A["tu install lite --yes"] --> B["tu check lite"]
     B --> C{"Codex CLI 是否为 ✓？"}
     C -->|"否"| A
     C -->|"是"| D["tu ai codex"]
@@ -68,7 +68,7 @@ flowchart LR
 
 | 类别 | 用于开始 Codex 开发 | 说明 |
 | --- | --- | --- |
-| Git、Node/npm/pnpm、Codex CLI | 必需 | 代码协作、CLI 运行与登录的最小基础。首次中断后缺失时，重跑 `tu install standard --yes`。 |
+| Git、Node/npm/pnpm、Codex CLI | 必需 | 代码协作、CLI 运行与登录的最小基础。首次中断后缺失时，重跑 `tu install lite --yes`。 |
 | Python、pip、uv | 按项目需要 | Python 项目、脚本或 AI SDK 才需要。 |
 | Java、Maven、Gradle | 按项目需要 | Java 项目才需要；Maven 镜像会随 Java 模块配置。 |
 | Docker daemon、VS Code Remote - WSL | 按项目需要 | 容器项目或使用 VS Code 图形界面时再处理。Docker CLI 存在但 daemon 不可用不阻塞 Codex。 |
@@ -77,15 +77,15 @@ flowchart LR
 `tu ai login` 会依次要求 Codex 和 OpenCode 都已安装；只想使用 Codex 时，请优先使用 `tu ai codex`，不必等待 OpenCode。
 
 > [!NOTE]
-> 如果 `tu install standard --yes` 被网络、`Ctrl+C` 或某个安装器中断，`tu check` 出现红色缺失项并不代表要从头清理环境。先按下面的补救步骤处理，再回到上方最短 Codex 开发路径。
+> 如果 `tu install lite --yes` 被网络、`Ctrl+C` 或某个安装器中断，`tu check` 出现红色缺失项并不代表要从头清理环境。先按下面的补救步骤处理，再回到上方最短 Codex 开发路径。
 
 ### 安装中断或 tu check 缺失时怎么办
 
 如果上一次标准版安装被中断，首选直接重跑：
 
 ```bash
-tu install standard --yes
-tu check
+tu install lite --yes
+tu check lite
 ```
 
 如果只想补齐某类工具，可按 `tu check` 的缺失项执行对应命令，再执行一次 `tu check`：
@@ -94,8 +94,11 @@ tu check
 | --- | --- | --- |
 | Node、npm、pnpm、NVM | `tu install node --yes` | 是 |
 | Python、pip、uv | `tu install python --yes` | 仅 Python 项目 |
-| Codex CLI、OpenCode | `tu install ai --yes` | 仅 Codex CLI 阻塞；OpenCode 可选 |
+| Codex CLI | `tu install codex --yes` | 阻塞轻量版与 Codex 开发 |
+| OpenCode | `tu install opencode --yes` | 仅标准版、最终版需要 |
 | Java、Maven、Gradle | `tu install java --yes` | 仅 Java 项目 |
+| Rust、Cargo、rustfmt、Clippy | `tu install rust --yes` | 仅最终版或 Rust 项目 |
+| Kubernetes CLI | `tu install devops --yes` | 仅最终版或需要 Kubernetes 时 |
 | GitHub CLI、lazygit | `tu install base --yes` | 否 |
 | Git | `tu install git --yes` | 是 |
 | Docker daemon | 在 Docker Desktop 启用 WSL Integration 后重开 WSL | 仅容器项目 |
@@ -105,9 +108,29 @@ tu check
 
 ## 配置档案
 
-推荐使用 `standard`，它包含基础工具、Shell 配置、Git 检查、Java 17/Maven/Gradle、NVM 与 Node LTS、Python 工具、Docker 检查、VS Code 检查和 AI CLI 检查。
+日常 Java 后端 + Node 前端开发推荐使用 `lite`；它包含基础工具、Shell 配置、Git、Java 17/Maven/Gradle、NVM/Node LTS、Docker 检查、VS Code 与 Codex CLI，但不安装 Python/uv 或 OpenCode。
 
-其他配置档案：`minimal`、`java`、`frontend`、`python-ai`、`ai-dev-environment`、`rust`、`devops`、`hardware`。`ai-dev-environment` 专注于 AI 项目初始化；Rust、DevOps 和硬件 profile 当前提供安全的结构和诊断能力，暂不执行重量级自动安装。
+`standard` 在 `lite` 基础上增加 Python/pip/uv 和 OpenCode；`ultimate` 完整继承 `standard`，并增加 Rust、DevOps（Kubernetes CLI）和 OpenRouter 登录入口。其他细分配置档案包括：`minimal`、`java`、`frontend`、`python-ai`、`ai-dev-environment`、`rust`、`devops`、`hardware`。
+
+### 三档版本功能对比
+
+`lite` 是日常 Java 后端 + Node 前端 + Codex 的轻量 AI 开发环境，不下载 Python/uv。需要 Python 或 OpenCode 时选择 `standard`；还要 Rust 与 Kubernetes CLI 时选择 `ultimate`。三档均可重复执行，缺项可直接重跑同档命令。
+
+| 功能项 | `lite`：Java AI 轻量环境 | `standard`：全栈 + 双 AI CLI | `ultimate`：多语言 + DevOps |
+| --- | :---: | :---: | :---: |
+| 基础协作：Git、SSH client、curl、zsh | ✓ | ✓ | ✓ |
+| Java 17、Maven、Gradle、Maven 镜像 | ✓ | ✓ | ✓ |
+| Node LTS、npm、pnpm | ✓ | ✓ | ✓ |
+| Codex CLI | ✓ | ✓ | ✓ |
+| Docker CLI / Compose 检查、VS Code `code` 检查 | ✓ | ✓ | ✓ |
+| Python、pip、pipx、uv | — | ✓ | ✓ |
+| OpenCode | — | ✓ | ✓ |
+| Rust、Cargo、rustfmt、Clippy | — | — | ✓ |
+| DevOps：Kubernetes CLI（kubectl） | — | — | ✓ |
+| OpenRouter provider 登录入口 | — | — | ✓，随后执行 `tu ai openrouter` |
+| 安装与诊断 | `tu install lite --yes` / `tu check lite` | `tu install standard --yes` / `tu check standard` | `tu install ultimate --yes` / `tu check ultimate` |
+
+`tu check` 默认按 `lite` 显示必需项；显式传入档位后，会以 `[必需]` 和 `[可选]` 标明该档位的判定范围。CI 或验收使用 `tu check <档位> --strict`；Docker daemon、Git 身份、SSH 公钥等需要外部系统或人工授权的状态会给出提示，但不作为这三个档位 CLI 安装是否完成的失败条件。
 
 ### 标准版工具总览
 
@@ -169,14 +192,16 @@ mvn help:effective-settings
 
 | Profile | 包含模块 | 适用场景 | 当前状态 |
 | --- | --- | --- | --- |
+| `lite` | 基础、Shell、Git、Java、Node、Docker、VS Code、Codex | 日常 Java + Node + Codex 开发，不安装 Python | 已实现 |
+| `standard` | `lite` + Python、uv、OpenCode | 需要 Python 或双 AI CLI 的全栈开发 | 已实现 |
+| `ultimate` | `standard` + Rust、DevOps（Kubernetes CLI）、OpenRouter 登录入口 | 多语言与 DevOps 完整环境 | 已实现；OpenRouter API Key 仍需用户交互输入 |
 | `minimal` | 基础、Shell、Git、VS Code 检查 | 轻量通用环境 | 已实现 |
-| `standard` | 基础、Shell、Git、Java、Node、Python、Docker、VS Code、AI | 推荐的 AI 全栈环境 | 已实现 |
 | `java` | 基础、Shell、Git、Java、Docker、VS Code | Java 后端 | 已实现 |
 | `frontend` | 基础、Shell、Git、Node、VS Code | Node.js 前端 | 已实现 |
 | `python-ai` | 基础、Shell、Git、Python、AI、VS Code | Python 和 AI | 已实现 |
 | `ai-dev-environment` | 基础、Shell、Git、Node、Python、AI、VS Code | AI 项目初始化 | 已实现 |
-| `rust` | 基础、Shell、Git、Rust、VS Code | Rust 开发 | 结构已提供，安装器待完善 |
-| `devops` | 基础、Shell、Git、Docker、DevOps、VS Code | DevOps 工具链 | 结构已提供，安装器待完善 |
+| `rust` | 基础、Shell、Git、Rust、VS Code | Rust 开发 | 安装 rustc、Cargo、rustfmt、Clippy |
+| `devops` | 基础、Shell、Git、Docker、DevOps、VS Code | DevOps 工具链 | 安装 Kubernetes CLI；Docker/Compose 由 Docker 模块提供 |
 | `hardware` | 基础、Shell、Git、Hardware、VS Code | 硬件与 IoT | 结构已提供，安装器待完善 |
 
 ### 不会自动处理的事项
@@ -194,14 +219,16 @@ mvn help:effective-settings
 
 ```text
 tu init                         交互式选择配置档案
-tu install standard --yes       非交互式安装配置档案
+tu install lite --yes           轻量 Java + Node + Codex 环境
+tu install standard --yes       标准版：轻量版 + Python/uv + OpenCode
+tu install ultimate --yes       最终版：标准版 + Rust + DevOps
 tu install docker               安装或检查单个模块
-tu check                        快速诊断
-tu doctor --verbose             详细诊断
-tu doctor --strict              严格诊断，问题时返回非零退出码
+tu check lite                   按轻量版检查（默认也是 lite）
+tu check standard               按标准版检查
+tu check ultimate --strict      按最终版严格检查，缺少该档位必需 CLI 时返回非零
 tu setup git --email you@example.com 生成并展示 GitHub SSH 公钥
 tu setup git --test             添加公钥后测试 GitHub SSH 连接
-tu install standard --dry-run  只展示安装/修改计划，不写入环境
+tu install ultimate --dry-run  只展示最终版的安装/修改计划，不写入环境
 tu update                       查看并确认安全更新
 tu list                         列出配置档案和模块
 tu setup ai --yes               初始化 AI 开发环境
@@ -214,7 +241,7 @@ tu version                      显示版本
 
 `tu install` 支持 `--yes`，用于自动确认软件包和安装器操作。工具不会创建 SSH 密钥、上传凭据、配置 API key 或打印 secrets。GitHub 登录需手动执行 `gh auth login`。
 
-`--dry-run` 适合第一次执行或 CI 预览：会展示包管理器、NVM/pnpm、Maven、Shell 和 AI CLI 的计划，不修改 `.zshrc`、`~/.m2/settings.xml` 或其他用户配置。`tu doctor --strict` 适合自动化验收，发现缺少工具、Docker daemon 不可用或 Git 身份未配置时返回非零退出码。
+`--dry-run` 适合第一次执行或 CI 预览：会展示包管理器、NVM/pnpm、Maven、Shell 和 AI CLI 的计划，不修改 `.zshrc`、`~/.m2/settings.xml` 或其他用户配置。`tu check <档位> --strict` 适合自动化验收，只在所选档位的必需 CLI 缺失时返回非零；Docker daemon、Git 身份和 SSH 公钥状态会继续提示，便于人工补齐。
 
 ## 安全与故障排查
 
@@ -226,7 +253,7 @@ tu version                      显示版本
 
 ## AI 登录与启动（按需）
 
-标准版会尝试安装 Codex CLI 和 OpenCode，但只使用 Codex 时无需等待或配置 OpenCode。选择一条与你目标相符的命令即可：
+轻量版、标准版和最终版都会安装 Codex CLI；标准版和最终版还会安装 OpenCode。只使用 Codex 时无需等待或配置 OpenCode。选择一条与你目标相符的命令即可：
 
 | 目标 | 执行命令 | 需要的额外操作 |
 | --- | --- | --- |
@@ -255,12 +282,12 @@ tu ai login
 cd ai-dev-env-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
-tu install standard --yes
-tu doctor
+tu install lite --yes
+tu check lite
 tu ai login
 ```
 
-标准版优先使用 NVM 管理 Node.js；OpenCode 和 Codex 在 npm 可用时使用 npm 安装，缺少 npm 时分别回退到官方安装方式或 Homebrew。
+所有版本优先使用 NVM 管理 Node.js；Codex 在 npm 可用时使用 npm 安装。标准版和最终版中的 OpenCode 也优先使用 npm 安装，缺少 npm 时分别回退到官方安装方式或 Homebrew。
 
 ### Windows 11/10 + Ubuntu WSL2
 
@@ -272,8 +299,8 @@ tu ai login
 cd ai-dev-env-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
-tu install standard --yes
-tu doctor
+tu install lite --yes
+tu check lite
 tu ai login
 ```
 
@@ -313,7 +340,7 @@ sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 
 ### 安装完成的判断
 
-完整 `standard` 环境以 `tu doctor --strict` 通过为准。若目标只是开始 Codex 开发，遵循上方“最短 Codex 开发路径”即可；Docker daemon、OpenCode、Java/Python 等按项目需要补齐。
+所选 profile 的完整 CLI 环境以 `tu check <profile> --strict` 通过为准，例如 `tu check standard --strict`。若目标只是开始 Codex 开发，遵循上方“最短 Codex 开发路径”即可；Docker daemon、Git 身份、SSH 公钥和 VS Code Remote - WSL 仍需按项目需要完成外部配置。
 
 ### macOS 一次性权限建议
 

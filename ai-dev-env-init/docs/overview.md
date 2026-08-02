@@ -31,7 +31,7 @@ flowchart LR
         C["tu init<br/>或 tu install &lt;profile&gt;"]
         F["profiles/*.conf<br/>选择模块组合"]
         M["安装或检查模块<br/>base / git / java / node / python ..."]
-        D["tu doctor<br/>统一诊断"]
+        D["tu check &lt;profile&gt;<br/>按档位诊断"]
         C --> F --> M --> D
     end
 
@@ -97,13 +97,13 @@ flowchart TD
     D["执行 ./install.sh"]
     E["tu 命令是否已在 PATH？"]
     F["执行 export PATH=...<br/>或重新加载 Shell 配置"]
-    G["预览：tu install standard --dry-run"]
+    G["预览：tu install lite --dry-run"]
     H["选择安装方式"]
     I["交互式：tu init"]
-    J["非交互式：tu install standard --yes"]
+    J["非交互式：tu install &lt;profile&gt; --yes"]
     K["按 Profile 逐个安装或检查模块"]
     L["人工完成剩余账号授权"]
-    N["执行 tu doctor"]
+    N["执行 tu check &lt;profile&gt;"]
     O{"诊断是否满足需求？"}
     P["按提示修复后重新诊断"]
     Z["环境可用"]
@@ -126,15 +126,15 @@ flowchart TD
     O -->|"是"| Z
 ```
 
-推荐先执行 `--dry-run` 查看计划。`standard` 是完整的 AI 全栈环境；只准备 AI 项目基础环境时，可以使用 `tu setup ai --dry-run` 和 `tu setup ai --yes`。
+推荐先执行 `--dry-run` 查看计划。日常 Java + Node + Codex 使用 `lite`；需要 Python/uv 与 OpenCode 时使用 `standard`；需要 Rust、DevOps 和 OpenRouter 登录入口时使用 `ultimate`。OpenRouter 的 API Key 仍由用户在 `tu ai openrouter` 启动的官方界面中输入。只准备 AI 项目基础环境时，可以使用 `tu setup ai --dry-run` 和 `tu setup ai --yes`。
 
 ## 首次开始 Codex 开发
 
-不需要等待所有可选工具都安装完。首次安装被网络或 `Ctrl+C` 中断时，直接重复同一条标准版命令即可；已完成的步骤会跳过或补全。
+不需要等待所有可选工具都安装完。首次安装被网络或 `Ctrl+C` 中断时，直接重复同一条所选档位命令即可；已完成的步骤会跳过或补全。
 
 ```mermaid
 flowchart TD
-    A["tu install standard --yes"] --> B["tu check"]
+    A["tu install lite --yes"] --> B["tu check lite"]
     B --> C{"Codex CLI 是否为 ✓？"}
     C -->|"否"| A
     C -->|"是"| D["tu ai codex"]
@@ -144,7 +144,7 @@ flowchart TD
 
 | 项目 | 对 Codex 首次开发是否阻塞 |
 | --- | --- |
-| Git、Node/npm/pnpm、Codex CLI | 阻塞：缺失时重跑 `tu install standard --yes`。 |
+| Git、Node/npm/pnpm、Codex CLI | 阻塞：缺失时重跑 `tu install lite --yes`。 |
 | Python/pip/uv、Java/Maven/Gradle | 仅相应语言项目需要。 |
 | Docker daemon、VS Code Remote - WSL | 仅容器或 VS Code 图形工作流需要。 |
 | GitHub CLI、lazygit、OpenCode | 可选；不阻塞 Codex。 |
@@ -153,7 +153,7 @@ flowchart TD
 
 ### 缺失项的最小补救
 
-安装中断后优先重跑 `tu install standard --yes`，然后重新执行 `tu check`。具体哪些缺失项阻塞 Codex、哪些可按项目需要再补，以及各模块的精确补救命令，统一在 [README](../README.md) 的“安装中断或 tu check 缺失时怎么办”部分维护。
+安装中断后优先重跑当前所选 profile，例如 `tu install lite --yes`，然后重新执行对应的 `tu check lite`。`tu check lite`、`tu check standard`、`tu check ultimate` 分别按三档环境标出必需项；具体缺失补救命令统一在 [README](../README.md) 的“安装中断或 tu check 缺失时怎么办”部分维护。
 
 ## 命令内部流向
 
@@ -171,7 +171,7 @@ flowchart LR
     PF["读取 profiles/&lt;name&gt;.conf"]
     IM["scripts/bootstrap.sh<br/>install_profile"]
     MM["install_module"]
-    MOD["模块安装函数<br/>base / shell / git / java<br/>node / python / docker / vscode / ai"]
+    MOD["模块安装函数<br/>base / shell / git / java / node / python<br/>docker / vscode / codex / opencode / rust / devops"]
     TEST["tests/run.sh<br/>及 tests/test-*.sh"]
 
     T --> A
@@ -204,18 +204,18 @@ flowchart LR
 flowchart TD
     A{"你的目标"}
     B["不知道选什么<br/>tu init"]
-    C["完整 AI 全栈环境<br/>tu install standard --yes"]
+    C["按层级安装<br/>lite / standard / ultimate"]
     D["只准备 AI 项目基础环境<br/>tu setup ai --yes"]
     E["只处理一个模块<br/>tu install &lt;module&gt;"]
-    F["只检查当前环境<br/>tu doctor"]
-    G["用于自动化验收<br/>tu doctor --strict"]
+    F["按档位检查当前环境<br/>tu check &lt;profile&gt;"]
+    G["用于自动化验收<br/>tu check &lt;profile&gt; --strict"]
 
     A -->|"交互选择"| B
-    A -->|"Java + Node + Python + Docker + AI"| C
+    A -->|"按 Java+Node、Python/AI、Rust/DevOps 选择层级"| C
     A -->|"Git + Node + Python + AI + VS Code"| D
     A -->|"例如 git / docker / java"| E
     A -->|"人工排障"| F
     A -->|"CI 或脚本"| G
 ```
 
-无论选择哪种安装入口，都建议以 `tu doctor` 收尾；需要在问题存在时返回非零退出码，则使用 `tu doctor --strict`。
+无论选择哪种安装入口，都建议以 `tu check <profile>` 收尾；需要在所选档位必需 CLI 缺失时返回非零退出码，则使用 `tu check <profile> --strict`。
