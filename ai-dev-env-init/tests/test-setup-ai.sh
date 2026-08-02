@@ -22,6 +22,11 @@ HOME="$test_home" bash -c '
   if ai_main openrouter >/dev/null 2>&1; then
     exit 1
   fi
+  mkdir -p "$HOME/.nvm" "$HOME/fake-bin"
+  printf "export PATH=\"$HOME/fake-bin:\$PATH\"\n" > "$HOME/.nvm/nvm.sh"
+  printf "#!/usr/bin/env bash\nprintf codex-from-nvm\\n" > "$HOME/fake-bin/codex"
+  chmod +x "$HOME/fake-bin/codex"
+  [[ "$(ai_main codex)" == "codex-from-nvm" ]]
 '
 
 printf 'setup-ai test passed\n'

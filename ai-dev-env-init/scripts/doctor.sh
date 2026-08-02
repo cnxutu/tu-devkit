@@ -44,7 +44,7 @@ doctor_main() {
     'rustfmt:rustfmt:rustfmt' 'clippy:Clippy:clippy-driver' 'kubectl:Kubernetes CLI:kubectl'; do
     IFS=: read -r key label cmd <<<"$item"
     if doctor_profile_requires "$profile" "$key"; then required=1; marker='必需'; else required=0; marker='可选'; fi
-    if [[ "$cmd" == nvm ]]; then safe_source "${NVM_DIR:-$HOME/.nvm}/nvm.sh"; fi
+    if [[ "$cmd" == nvm ]]; then load_nvm; fi
     if has "$cmd" || { [[ "$cmd" == nvm ]] && declare -F nvm >/dev/null 2>&1; }; then
       printf '  ✓ %-18s %-9s %s\n' "$label" "[$marker]" "$(version_of "$cmd")"
     else

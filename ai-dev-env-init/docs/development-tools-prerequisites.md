@@ -59,6 +59,9 @@ git pull --ff-only
 
 `git switch dev` 在本地已存在 `dev` 时会直接切换；首次克隆但只有 `origin/dev` 时，Git 会创建对应的本地分支。紧随其后的 `git branch --set-upstream-to=origin/dev dev` 会显式建立或确认本地 `dev` 与远端 `origin/dev` 的跟踪关系，可重复执行。不要对已存在的本地分支执行 `git switch --track origin/dev`，否则会报 `a branch named 'dev' already exists`。
 
+> [!IMPORTANT]
+> 当后续执行 `git pull` 拉到 `ai-dev-env-init` 的更新后，进入该目录再运行一次 `./install.sh`。仓库代码已更新不等于 `~/.local/share/tu-devkit` 中的已安装 `tu` 已更新；若跳过这一步，新增 profile 可能报 `Unknown module/profile`。
+
 如果任务或 PR 明确指定了其他分支，再按实际分支名切换：
 
 ~~~bash
@@ -121,6 +124,9 @@ tu ai codex
 ~~~
 
 只想开始 Codex 开发时，`tu ai codex` 即可启动登录；`tu ai login` 会额外要求 OpenCode 也已安装，适合同时使用两种 AI CLI 的场景。
+
+> [!NOTE]
+> Codex 与 OpenCode 默认安装到 NVM 管理的 Node 路径。新版 `tu ai codex`、`tu ai opencode`、`tu ai login`、`tu ai openrouter` 会自动加载 NVM。若旧版 `tu` 报 `Codex CLI 未安装`、`OpenCode 未安装` 或直接运行命令报 `command not found`，执行 `source ~/.nvm/nvm.sh` 后重试；再在 `ai-dev-env-init` 目录运行 `./install.sh` 更新已安装的 `tu` 副本。
 
 ## 3. Windows 宿主机集成（仅 WSL2）
 

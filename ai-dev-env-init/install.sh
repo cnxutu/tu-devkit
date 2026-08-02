@@ -46,10 +46,10 @@ if [[ ":${PATH}:" != *":${HOME}/.local/bin:"* ]]; then
   if [[ -z "$path_install_dir" ]]; then
     printf '%s\n' "当前终端请先执行: export PATH=\"$HOME/.local/bin:\$PATH\""
   else
-    printf '%s\n' "当前 PATH 已安装 tu wrapper，可直接运行: tu doctor"
+    printf '%s\n' "当前 PATH 已安装 tu wrapper，可直接运行: tu check lite"
   fi
 fi
 if [[ -z "$path_install_dir" ]]; then
   printf '%s\n' '当前终端请执行: source ~/.zshrc（或 source ~/.bashrc）'
 fi
-printf '%s\n' '然后运行: tu doctor'
+printf '%s\n' '然后运行: tu check lite'

@@ -38,6 +38,9 @@ tu check lite
 
 安装脚本会把完整运行包放到 `~/.local/share/tu-devkit`，并把 `tu` wrapper 放到 `~/.local/bin`；当前 PATH 中存在可写目录时还会同步放置 wrapper，因此 macOS Homebrew 环境通常无需重新打开终端即可执行。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。如果当前没有可写的 PATH 目录，安装器会提示执行 `source ~/.zshrc` 或 `source ~/.bashrc`。
 
+> [!IMPORTANT]
+> `git pull` 更新的是仓库工作区；`tu` 实际运行的是安装在 `~/.local/share/tu-devkit` 的副本。每次拉取包含 `ai-dev-env-init` 变更后，请在该目录重新运行一次 `./install.sh`，再执行 `tu check <profile>`。否则会继续运行旧版本，并可能出现 `Unknown module/profile: lite`。
+
 运行 `tu install lite|standard|ultimate --yes` 时，NVM 和 AI 官方安装器的下载会显示阶段与进度，并设置 60 秒连接超时、300 秒总超时和重试。`standard` 与 `ultimate` 中的 uv 默认使用 `pipx` 安装，显示 pip 下载进度，并使用 60 秒请求超时与 3 次重试；只有 `pipx` 不可用时才回退到官方安装器。若网络异常或误按 `Ctrl+C`，可直接重新执行相同命令；已完成的系统包、Maven 配置和 NVM/Node 安装会跳过或补全，不需要删除用户目录后重来。
 
 支持的目标环境是 macOS，以及 Windows 11/10 中的 Ubuntu WSL2。Windows 原生 PowerShell 不在本项目范围内；请在 WSL2 Ubuntu 终端中运行本工具。
@@ -52,7 +55,7 @@ tu check lite
 tu ai codex
 ```
 
-`tu ai codex` 会打开 Codex CLI；首次启动时在界面中选择 **Sign in with ChatGPT**。登录后，在项目目录直接运行 `codex` 即可开始 AI 开发。
+`tu ai codex` 会自动加载 NVM 后打开 Codex CLI；首次启动时在界面中选择 **Sign in with ChatGPT**。登录后，在项目目录直接运行 `codex` 即可开始 AI 开发。
 
 ```mermaid
 flowchart LR
@@ -261,6 +264,9 @@ tu version                      显示版本
 | 同时使用 Codex 和 OpenCode | `tu ai login` | 依次完成 Codex 登录与 OpenCode provider 登录。 |
 | 配置 OpenCode + OpenRouter | `tu ai openrouter` | 在官方界面选择 OpenRouter，并自行输入 API Key。 |
 | 启动已配置的 OpenCode | `tu ai opencode` | 不修改 provider 配置。 |
+
+> [!NOTE]
+> Codex 和 OpenCode 默认优先通过 NVM 管理的 npm 安装，因此可执行文件通常位于 NVM 的 Node 路径中。新版 `tu ai codex`、`tu ai opencode`、`tu ai login` 和 `tu ai openrouter` 会自动加载 NVM。若使用的是尚未重新执行 `./install.sh` 的旧版 `tu`，或排查时直接运行 `codex` / `opencode` 报“command not found”，先执行 `source ~/.nvm/nvm.sh`，再重试；随后在仓库的 `ai-dev-env-init` 目录重新运行 `./install.sh` 以更新 `tu`。
 
 脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。OpenRouter API Key 属于敏感凭据：不要写入项目文件、Git 配置、Shell 历史或仓库。
 

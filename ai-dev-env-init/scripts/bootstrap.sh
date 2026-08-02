@@ -148,7 +148,7 @@ install_node() {
     PROFILE=/dev/null NVM_DIR="$nvm_dir" bash "$tmp"
     rm -f "$tmp"
   fi
-  safe_source "$nvm_dir/nvm.sh"
+  load_nvm
   if declare -F nvm >/dev/null 2>&1; then
     log_info 'Installing or verifying Node.js LTS with NVM'
     nvm install --lts
@@ -156,6 +156,10 @@ install_node() {
     corepack enable 2>/dev/null || true
     has pnpm || { log_info 'Installing pnpm'; npm install --global pnpm; }
   fi
+}
+load_nvm() {
+  local nvm_dir="${NVM_DIR:-$HOME/.nvm}"
+  safe_source "$nvm_dir/nvm.sh"
 }
 install_python() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then ensure_packages python3:python3 python3-pip:python3-pip pipx:pipx
@@ -232,6 +236,7 @@ install_openrouter() {
 }
 install_ai() { install_codex; install_opencode; }
 ai_main() {
+  load_nvm
   local action="${1:-help}"
   case "$action" in
     help) cat <<'EOF'
