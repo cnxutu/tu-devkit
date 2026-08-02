@@ -228,6 +228,16 @@ tu ai login
 
 首次安装或重装 Ubuntu，并希望将 WSL 虚拟磁盘放到 D 盘时，请先阅读 [Windows WSL2 与 Ubuntu 前置环境](docs/windows-wsl2-setup.md)。
 
+首次使用 `/data/workspace` 时，不要直接在 `/data` 下执行 `mkdir workspace`。`/data` 是根目录下的系统级目录，普通用户默认没有创建子目录的权限。先在 Ubuntu WSL2 终端执行一次：
+
+```bash
+sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0755 /data/workspace
+cd /data/workspace
+touch .write-test && rm .write-test
+```
+
+看到 `mkdir: cannot create directory 'workspace': Permission denied` 时也使用上面的命令修复。不要使用 `chmod 777`，也不要用 `sudo` 运行后续的 `git clone`、npm、pnpm 或 Maven 命令。
+
 在 Ubuntu WSL2 终端中执行：
 
 ```bash
@@ -276,7 +286,7 @@ sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 ~/.nvm
 ```
 
-目录不存在时创建；`/data` 存在时会询问是否将 `/data` 及其全部内容递归归当前用户所有，具体项目目录也会按需修复。脚本保留现有权限模式，不执行 `chmod 777`，也不会递归修改 `/`、整个 `/home` 或 `/mnt`。如果 `/data` 中存放其他用户或系统服务数据，请先备份并确认归属影响。
+目录不存在时创建；脚本不改变已有 `/data` 的所有者，只创建或修复明确的工作区和用户目录。脚本保留现有权限模式，不执行 `chmod 777`，也不会递归修改 `/`、整个 `/home`、`/mnt` 或用途不明的 `/data` 内容。
 
 建议把代码放在 `/data/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\data\workspace` 访问该目录。
 

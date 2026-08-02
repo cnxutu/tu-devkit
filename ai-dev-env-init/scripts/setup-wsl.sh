@@ -20,7 +20,7 @@ setup_wsl_main() {
   group_name="$(id -gn)"; uid="$(id -u)"; gid="$(id -g)"
   if [[ "$DRY_RUN" == 1 ]]; then
     log_info "[DRY-RUN] prepare WSL data root and workspace: $data_root, $workspace"
-    log_info "[DRY-RUN] recursively assign $data_root and its contents to the current user; repair targeted user directories"
+    log_info "[DRY-RUN] repair the targeted workspace and user directories; do not recursively change unrelated data"
     return 0
   fi
   if [[ "$workspace" == /mnt/* ]]; then
@@ -34,14 +34,6 @@ setup_wsl_main() {
       run sudo install -d -o "$uid" -g "$gid" -m 0755 "$data_root"
     else log_warn "无法创建 $data_root"; fi
   fi
-  if [[ -d "$data_root" ]]; then
-    if confirm "将 $data_root 及其全部内容归 ${user_name}:${group_name}（保留现有权限模式）？"; then
-      run sudo chown -R "${uid}:${gid}" "$data_root"
-    else
-      log_warn "未修改 $data_root 的所有权"
-    fi
-  fi
-
   local paths=(
     "$workspace"
     "${HOME}/.local"

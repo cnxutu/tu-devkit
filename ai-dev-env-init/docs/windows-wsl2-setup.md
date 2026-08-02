@@ -88,14 +88,26 @@ sudo apt install -y git curl ca-certificates unzip zip jq tree build-essential
 
 ## 5. 创建代码目录
 
+`/data` 位于 Linux 根目录下。普通用户直接执行 `mkdir /data/workspace` 或先进入 `/data` 再执行 `mkdir workspace`，通常会收到 `Permission denied`，这是正常的 Linux 权限保护，不是 WSL2 安装失败。
+
 ~~~bash
-sudo mkdir -p /data/workspace
-sudo chown -R "$USER":"$USER" /data
+sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0755 /data/workspace
 cd /data/workspace
 pwd
+touch .write-test && rm .write-test
 ~~~
 
-预期为 /data/workspace。Windows 可通过 \\wsl$\Ubuntu\data\workspace 访问；不要以管理员身份在该路径创建代码文件。
+`pwd` 预期为 `/data/workspace`，写入测试应无报错。`install -d` 会用管理员权限创建目录，但直接把新目录的所有者设置为当前用户；后续的 `git clone`、构建和包管理命令不再使用 `sudo`。
+
+如果目录已经存在但当前用户不能写入，先检查归属，再只修复这个开发目录：
+
+~~~bash
+ls -ld /data /data/workspace
+sudo chown -R "$(id -u):$(id -g)" /data/workspace
+touch /data/workspace/.write-test && rm /data/workspace/.write-test
+~~~
+
+不要执行 `chmod 777`。不要在不清楚内容归属时递归修改整个 `/data`；其中可能存在其他用户或服务的数据。Windows 可通过 `\\wsl$\Ubuntu\data\workspace` 访问；不要以管理员身份在该路径创建代码文件。
 
 ## 6. VS Code、Docker 与 ai-dev-env-init
 
@@ -119,5 +131,6 @@ tu doctor
 
 - C 盘仍增长：确认 Ubuntu 使用 import 放在 D:\WSL\Ubuntu，并检查 Docker Desktop 磁盘镜像位置。
 - WSL 不能启动：执行 wsl --update、重启，并检查虚拟化设置。
-- 权限错误：只对 /data 等明确开发目录执行 chown，绝不递归修改 /、/home 或 /mnt。
+- 在 `/data` 下 `mkdir workspace` 报 `Permission denied`：执行第 5 节的 `sudo install -d ... /data/workspace`，再以普通用户验证写入。
+- 已有目录权限错误：只对 `/data/workspace` 等明确开发目录执行 `chown`，绝不递归修改 `/`、整个 `/home`、`/mnt` 或用途不明的 `/data`。
 
