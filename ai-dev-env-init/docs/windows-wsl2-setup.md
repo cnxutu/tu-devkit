@@ -76,14 +76,11 @@ wsl --shutdown
 wsl -d Ubuntu
 ~~~
 
-在 Ubuntu 验证并安装基础工具：
+在 Ubuntu 验证默认用户和文件系统：
 
 ~~~bash
 whoami
 df -h /
-sudo apt update
-sudo apt upgrade -y
-sudo apt install -y git curl ca-certificates unzip zip jq tree build-essential
 ~~~
 
 ## 5. 创建代码目录
@@ -109,26 +106,9 @@ touch /data/workspace/.write-test && rm /data/workspace/.write-test
 
 不要执行 `chmod 777`。不要在不清楚内容归属时递归修改整个 `/data`；其中可能存在其他用户或服务的数据。Windows 可通过 `\\wsl$\Ubuntu\data\workspace` 访问；不要以管理员身份在该路径创建代码文件。
 
-## 6. VS Code、Docker 与 ai-dev-env-init
+## 下一步
 
-安装 Windows VS Code 和 Remote - WSL 扩展，在 Ubuntu 项目目录执行 code .。Docker Desktop 中启用 Ubuntu 的 WSL Integration，并将 Disk image location 改到 D 盘；不要同时启动 Ubuntu 内第二个 Docker daemon。
-
-克隆仓库前，先按 [README 的 GitHub SSH 前置步骤](../README.md#前置安装-git-与-github-ssh) 生成公钥、在 GitHub 网页添加 **Authentication Key**，并通过 `ssh -T git@github.com` 验证。这个网页授权步骤需要用户亲自完成。
-
-~~~bash
-cd /data/workspace
-git clone git@github.com:cnxutu/tu-devkit.git
-cd tu-devkit/ai-dev-env-init
-chmod +x install.sh
-./install.sh
-export PATH="$HOME/.local/bin:$PATH"
-tu setup git --email "你的 GitHub 邮箱"  # 仅在还没有 SSH key 时执行
-tu setup wsl --dry-run
-tu setup ai --dry-run
-tu doctor
-~~~
-
-确认后执行 tu setup wsl --yes、tu setup ai --yes。OpenCode + OpenRouter 使用 tu ai openrouter；该命令不保存 API Key。
+WSL2 本体、默认用户与开发目录完成后，继续阅读 [开发工具前置环境](development-tools-prerequisites.md)。其中包括 Git/GitHub SSH、首次主机指纹确认、Docker Desktop、VS Code Remote - WSL，以及 `tu` 的安装顺序。
 
 ## 排障
 

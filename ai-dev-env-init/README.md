@@ -4,54 +4,31 @@
 
 仓库级工具索引见 [tu-devkit README](../README.md)。
 
+> 第一次接触本模块，建议先看 [整体导览：阅读顺序、使用主流程与命令内部流向](docs/overview.md)。
+
 ## 快速开始
 
-### 前置安装 Git 与 GitHub SSH
+### 先完成前置环境
 
-如果使用 `git clone`，请先安装 Git：
+首次使用按平台依次阅读所需文档：
 
-macOS：
+- Windows + Ubuntu WSL2：先完成 [WSL2 与 Ubuntu 环境](docs/windows-wsl2-setup.md)，再完成 [开发工具前置环境](docs/development-tools-prerequisites.md)。
+- macOS：直接完成 [开发工具前置环境](docs/development-tools-prerequisites.md)。
 
-```bash
-xcode-select --install
-```
-
-如果已经安装 Homebrew，也可以执行：
-
-```bash
-brew install git
-```
-
-Ubuntu WSL2：
-
-```bash
-sudo apt update
-sudo apt install -y git
-```
-
-如果不想预先安装 Git，也可以从 GitHub 下载 ZIP；运行 AI 初始化模块的 `./install.sh` 后，标准 profile 会尝试安装 Git。
-
-如果要使用 `git@github.com:...` 的 SSH 地址克隆仓库，安装 Git 后还需先生成并登记 SSH 公钥。此步骤需要用户在 GitHub 网页参与完成，不能由初始化脚本代替：
-
-```bash
-ssh-keygen -t ed25519 -C "你的 GitHub 邮箱"
-cat ~/.ssh/id_ed25519.pub
-```
-
-复制输出的整行公钥（以 `ssh-ed25519` 开头），打开 [GitHub SSH key 设置页](https://github.com/settings/ssh/new)，选择 **Authentication Key** 并粘贴保存。随后验证并克隆：
-
-```bash
-ssh -T git@github.com
-git clone git@github.com:cnxutu/tu-devkit.git
-```
-
-首次执行 `ssh -T` 时出现 GitHub 主机真实性确认是正常的。先对照 [GitHub 公布的 SSH 主机指纹](https://docs.github.com/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)，确认无误后输入 `yes`。只上传 `.pub` 公钥，绝不复制或上传 `~/.ssh/id_ed25519` 私钥。
+开发工具前置环境包含 Git、GitHub SSH 公钥登记、首次 GitHub 主机指纹确认、Docker Desktop、VS Code Remote - WSL 及 `tu` 安装顺序。其中 GitHub 网页添加 SSH 公钥和账号登录必须由用户参与完成。
 
 ### 安装 AI 开发环境初始化模块
 
+> [!IMPORTANT]
+> SSH 克隆、`tu init` 和账号登录都可能进入交互状态。不要将下面整段命令一次性粘贴到终端；每次执行一行，看到输出完成或交互结束后再执行下一行。首次 SSH 克隆出现 `Are you sure you want to continue connecting` 时，先核对 [GitHub 官方指纹](https://docs.github.com/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)，确认匹配后输入 `yes` 并等待克隆完成。
+
 ```bash
-git clone https://github.com/<username>/tu-devkit.git
-cd tu-devkit/ai-dev-env-init
+git clone git@github.com:cnxutu/tu-devkit.git
+cd tu-devkit
+git switch dev
+git branch --set-upstream-to=origin/dev dev
+git pull --ff-only
+cd ai-dev-env-init
 chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -244,17 +221,7 @@ tu ai login
 
 ### Windows 11/10 + Ubuntu WSL2
 
-首次安装或重装 Ubuntu，并希望将 WSL 虚拟磁盘放到 D 盘时，请先阅读 [Windows WSL2 与 Ubuntu 前置环境](docs/windows-wsl2-setup.md)。
-
-首次使用 `/data/workspace` 时，不要直接在 `/data` 下执行 `mkdir workspace`。`/data` 是根目录下的系统级目录，普通用户默认没有创建子目录的权限。先在 Ubuntu WSL2 终端执行一次：
-
-```bash
-sudo install -d -o "$(id -u)" -g "$(id -g)" -m 0755 /data/workspace
-cd /data/workspace
-touch .write-test && rm .write-test
-```
-
-看到 `mkdir: cannot create directory 'workspace': Permission denied` 时也使用上面的命令修复。不要使用 `chmod 777`，也不要用 `sudo` 运行后续的 `git clone`、npm、pnpm 或 Maven 命令。
+先按 [WSL2 与 Ubuntu 环境](docs/windows-wsl2-setup.md) 创建并验证 `/data/workspace`，再按 [开发工具前置环境](docs/development-tools-prerequisites.md) 完成 Git/SSH 和宿主机集成。
 
 在 Ubuntu WSL2 终端中执行：
 
@@ -266,13 +233,6 @@ tu install standard --yes
 tu doctor
 tu ai login
 ```
-
-WSL2 还需要在 Windows 侧完成以下一次性设置：
-
-- 安装 Docker Desktop，并在 Settings → Resources → WSL Integration 中启用当前 Ubuntu 发行版。
-- 安装 Windows 版 VS Code 和 Remote - WSL 扩展。
-- 从 WSL 项目目录执行 `code .`，确认 VS Code 能通过 WSL 打开项目。
-- 如果 Docker CLI 存在但 `tu doctor` 显示 daemon 不可用，优先检查 Docker Desktop 是否运行及 WSL integration 是否启用，不要再安装第二套 Docker。
 
 #### WSL2 一次性权限初始化
 
@@ -306,17 +266,7 @@ sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 
 目录不存在时创建；脚本不改变已有 `/data` 的所有者，只创建或修复明确的工作区和用户目录。脚本保留现有权限模式，不执行 `chmod 777`，也不会递归修改 `/`、整个 `/home`、`/mnt` 或用途不明的 `/data` 内容。
 
-建议把代码放在 `/data/workspace`，而不是 `/mnt/c/...`。[Microsoft WSL 文档](https://learn.microsoft.com/zh-cn/windows/wsl/filesystems) 建议 Linux 工具链的项目放在 WSL 自己的文件系统中，以获得更好的性能。WSL 在 Windows 挂载盘上受到 Windows ACL 和 DrvFs 权限规则影响，Linux 中执行 `chmod` 或 `chown` 不一定能获得 Windows 侧没有的权限，具体规则见 [WSL 文件权限说明](https://learn.microsoft.com/en-us/windows/wsl/file-permissions)。可以在 Windows 文件管理器中通过 `\\wsl$\Ubuntu\data\workspace` 访问该目录。
-
-如果手动把用户加入原生 Docker Engine 的 `docker` 组，需要重新打开 WSL：
-
-```bash
-sudo usermod -aG docker "$USER"
-exit
-# 在 PowerShell 中：wsl --shutdown
-```
-
-Docker Desktop WSL Integration 模式通常不需要加入 `docker` 组，脚本只提醒，不会默认修改该组。
+有关 `/data/workspace` 与 Windows 挂载盘的差异、Docker Desktop 和 `docker` 组的注意事项，见对应的 WSL2 与开发工具前置文档。
 
 ### 安装完成的判断
 
@@ -361,53 +311,16 @@ Profile 的模块清单位于 `profiles/*.conf`，`tu list` 和 `tu install` 会
 
 ## Git、SSH 与 GitHub 配置
 
-安装完成后，先检查 Git：
+Git、提交身份、SSH 公钥生成、GitHub 网页登记、首次主机指纹确认、`gh` 登录与私钥安全边界统一维护在 [开发工具前置环境](docs/development-tools-prerequisites.md#1-git-与-github-ssh)。
 
-```bash
-tu install git
-tu doctor
-```
-
-如果尚未配置提交身份，请使用自己的信息：
-
-```bash
-git config --global user.name "你的姓名"
-git config --global user.email "你的邮箱"
-git config --global init.defaultBranch main
-```
-
-推荐使用 SSH 连接 GitHub。安装完 `tu` 后，可以让它在不覆盖既有密钥的前提下生成并展示公钥：
+安装 `tu` 后可使用：
 
 ```bash
 tu setup git --email "你的 GitHub 邮箱"
-```
-
-该命令只生成本机密钥并显示 `.pub` 公钥；它不会上传密钥、打开浏览器或替你授予 GitHub 权限。也可以手动执行：
-
-```bash
-ssh-keygen -t ed25519 -C "你的邮箱"
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519
-pbcopy < ~/.ssh/id_ed25519.pub          # macOS
-clip.exe < ~/.ssh/id_ed25519.pub        # WSL2 Ubuntu，可复制到 Windows 剪贴板
-```
-
-然后将公钥添加到 [GitHub SSH key 设置页](https://github.com/settings/ssh/new)，并测试：
-
-```bash
-ssh -T git@github.com
-# 或在已添加公钥后：
 tu setup git --test
 ```
 
-GitHub CLI 登录是另一条独立的认证路径：
-
-```bash
-gh auth login
-gh auth status
-```
-
-不要把 `~/.ssh` 私钥、GitHub token 或 API key 提交到项目中。`tu doctor` 会检查 Git 用户信息、GitHub CLI 登录状态，并在缺少 SSH key 时给出提醒。
+这两个命令不会上传私钥、打开浏览器或替你完成 GitHub 授权；`tu doctor` 会检查 Git 身份、GitHub CLI 登录状态和 SSH key 是否存在。
 
 ## 目录结构
 
