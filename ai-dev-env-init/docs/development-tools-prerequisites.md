@@ -102,7 +102,7 @@ tu install lite --dry-run
 tu install lite --yes
 tu check lite
 
-# 需要 Python/uv 或 OpenCode 时，改用标准版
+# 需要标准版默认组合（Python/uv + OpenCode）时，改用标准版
 tu install standard --yes
 tu check standard
 
@@ -113,7 +113,7 @@ tu check ultimate
 tu ai openrouter
 ~~~
 
-`lite` 提供 Java、Maven、Node 和 Codex；`standard` 在此基础上加入 Python/uv 与 OpenCode；`ultimate` 再加入 Rust、Cargo、rustfmt、Clippy、Kubernetes CLI 和 OpenRouter 登录入口。OpenRouter 的 API Key 必须由用户在 `tu ai openrouter` 打开的官方界面中输入，脚本不会保存该凭据。下载 NVM 或 AI 官方安装器时会显示当前阶段、进度、60 秒连接超时、300 秒总超时和最多 3 次重试。`standard` 与 `ultimate` 中的 uv 默认通过 `pipx` 安装并显示 pip 下载进度，设置 60 秒请求超时和 3 次重试；仅在 `pipx` 不可用时回退到官方安装器。若网络仍不可用或误按 `Ctrl+C` 中断，可直接重新执行同一档位的 `tu install <profile> --yes`：已完成的包、Maven 配置和 NVM/Node 安装会被识别并跳过或补全，无需删除 `~/.m2`、`~/.nvm` 或其他用户目录。
+`lite` 提供 Java、Maven、Node 和 Codex；`standard` 在此基础上默认加入 Python/uv 与 OpenCode；`ultimate` 再加入 Rust、Cargo、rustfmt、Clippy、Kubernetes CLI 和 OpenRouter 登录入口。profile 是默认组合而不是工具绑定：例如已安装 `lite` 后，只需 `tu install opencode --yes` 就能增加 OpenCode，不必安装 `standard` 或 Python/uv；`tu install codex --yes` 与 `tu install ai --yes` 也分别可独立补齐 Codex、或同时补齐两种 AI CLI。OpenRouter 的 API Key 必须由用户在 `tu ai openrouter` 打开的官方界面中输入，脚本不会保存该凭据。下载 NVM 或 AI 官方安装器时会显示当前阶段、进度、60 秒连接超时、300 秒总超时和最多 3 次重试。`standard` 与 `ultimate` 中的 uv 默认通过 `pipx` 安装并显示 pip 下载进度，设置 60 秒请求超时和 3 次重试；仅在 `pipx` 不可用时回退到官方安装器。若网络仍不可用或误按 `Ctrl+C` 中断，可直接重新执行同一档位的 `tu install <profile> --yes`：已完成的包、Maven 配置和 NVM/Node 安装会被识别并跳过或补全，无需删除 `~/.m2`、`~/.nvm` 或其他用户目录。
 
 或者只准备 AI 项目基础环境：
 
@@ -124,6 +124,24 @@ tu ai codex
 ~~~
 
 只想开始 Codex 开发时，`tu ai codex` 即可启动登录；`tu ai login` 会额外要求 OpenCode 也已安装，适合同时使用两种 AI CLI 的场景。
+
+### 单独使用 OpenCode（DeepSeek 示例）
+
+OpenCode 不依赖 Codex 登录，也不必绑定 `standard`。已安装 `lite` 或其他档案后，单独补齐并启动 OpenCode：
+
+~~~bash
+tu install opencode --yes
+tu ai opencode
+~~~
+
+在 TUI 内输入 `/connect`，选择 **DeepSeek** 并按提示输入 API Key；再输入 `/models`，从当前账号可见的列表选择模型。用于脚本或单次任务时，`tu ai opencode` 可直接转发官方参数：
+
+~~~bash
+tu ai opencode run "审查当前变更，列出必须修复的问题"
+tu ai opencode run --model "deepseek/<模型名>" "解释测试失败原因"
+~~~
+
+密钥只在 OpenCode 的交互提示中输入，不写入项目配置或版本库。CI、容器或远程主机等无交互环境，先按组织的密钥管理流程注入凭据，再以 [OpenCode Providers 文档](https://opencode.ai/docs/providers) 核对当前环境变量和 provider/model 标识。
 
 > [!NOTE]
 > Codex 与 OpenCode 默认安装到 NVM 管理的 Node 路径。新版 `tu ai codex`、`tu ai opencode`、`tu ai login`、`tu ai openrouter` 会自动加载 NVM。若旧版 `tu` 报 `Codex CLI 未安装`、`OpenCode 未安装` 或直接运行命令报 `command not found`，执行 `source ~/.nvm/nvm.sh` 后重试；再在 `ai-dev-env-init` 目录运行 `./install.sh` 更新已安装的 `tu` 副本。

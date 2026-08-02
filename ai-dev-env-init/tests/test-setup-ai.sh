@@ -25,8 +25,11 @@ HOME="$test_home" bash -c '
   mkdir -p "$HOME/.nvm" "$HOME/fake-bin"
   printf "export PATH=\"$HOME/fake-bin:\$PATH\"\n" > "$HOME/.nvm/nvm.sh"
   printf "#!/usr/bin/env bash\nprintf codex-from-nvm\\n" > "$HOME/fake-bin/codex"
+  printf "#!/usr/bin/env bash\nprintf 'opencode-from-nvm: %s\\n' \"\$*\"\n" > "$HOME/fake-bin/opencode"
   chmod +x "$HOME/fake-bin/codex"
+  chmod +x "$HOME/fake-bin/opencode"
   [[ "$(ai_main codex)" == "codex-from-nvm" ]]
+  [[ "$(ai_main opencode run "explain this repository")" == "opencode-from-nvm: run explain this repository" ]]
 '
 
 printf 'setup-ai test passed\n'

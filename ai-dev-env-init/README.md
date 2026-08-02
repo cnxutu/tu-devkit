@@ -111,13 +111,34 @@ tu check lite
 
 ## 配置档案
 
-日常 Java 后端 + Node 前端开发推荐使用 `lite`；它包含基础工具、Shell 配置、Git、Java 17/Maven/Gradle、NVM/Node LTS、Docker 检查、VS Code 与 Codex CLI，但不安装 Python/uv 或 OpenCode。
+日常 Java 后端 + Node 前端开发推荐使用 `lite`；它包含基础工具、Shell 配置、Git、Java 17/Maven/Gradle、NVM/Node LTS、Docker 检查、VS Code 与 Codex CLI，但默认不安装 Python/uv 或 OpenCode。
 
 `standard` 在 `lite` 基础上增加 Python/pip/uv 和 OpenCode；`ultimate` 完整继承 `standard`，并增加 Rust、DevOps（Kubernetes CLI）和 OpenRouter 登录入口。其他细分配置档案包括：`minimal`、`java`、`frontend`、`python-ai`、`ai-dev-environment`、`rust`、`devops`、`hardware`。
 
 ### 三档版本功能对比
 
-`lite` 是日常 Java 后端 + Node 前端 + Codex 的轻量 AI 开发环境，不下载 Python/uv。需要 Python 或 OpenCode 时选择 `standard`；还要 Rust 与 Kubernetes CLI 时选择 `ultimate`。三档均可重复执行，缺项可直接重跑同档命令。
+`lite` 是日常 Java 后端 + Node 前端 + Codex 的轻量 AI 开发环境，不下载 Python/uv。`standard` 是预置 Python/uv 与 OpenCode 的一键组合；还要 Rust 与 Kubernetes CLI 时选择 `ultimate`。三档均可重复执行，缺项可直接重跑同档命令。
+
+### Profile 是默认组合，AI 工具可独立选配
+
+`lite`、`standard`、`ultimate` 只定义一键安装时的默认工具组合，不把 AI CLI 与档位永久绑定。已安装任一档位后，可以按需单独安装或补齐模块；例如已经使用 `lite` 时，只想增加 OpenCode（含 DeepSeek 等 provider），不需要再安装 `standard`，也不会因此安装 Python/uv：
+
+```bash
+# 单独补齐一个 AI CLI
+tu install opencode --yes
+
+# 单独补齐 Codex CLI
+tu install codex --yes
+
+# 同时安装/补齐 Codex 与 OpenCode
+tu install ai --yes
+
+# 检查 OpenCode 是否可用，然后启动它
+tu check standard
+tu ai opencode
+```
+
+`tu check standard` 会同时提示 standard 默认组合中的 Python/uv 等项目；它适合验证完整 standard 档案。只验证已选配的 OpenCode 时，直接运行 `tu ai opencode` 即可：缺少 CLI 会给出单独安装命令。以后新增 AI 工具也应优先作为可独立安装的模块，再决定是否加入某个 profile 的默认组合。
 
 | 功能项 | `lite`：Java AI 轻量环境 | `standard`：全栈 + 双 AI CLI | `ultimate`：多语言 + DevOps |
 | --- | :---: | :---: | :---: |
@@ -237,7 +258,7 @@ tu list                         列出配置档案和模块
 tu setup ai --yes               初始化 AI 开发环境
 tu ai login                     依次配置 Codex 和 OpenCode 账号
 tu ai codex                     打开 Codex CLI
-tu ai opencode                  打开 OpenCode
+tu ai opencode [args...]        打开 OpenCode，或转发 OpenCode CLI 参数
 tu ai openrouter                在 OpenCode 官方登录流程中配置 OpenRouter
 tu version                      显示版本
 ```
@@ -264,11 +285,36 @@ tu version                      显示版本
 | 同时使用 Codex 和 OpenCode | `tu ai login` | 依次完成 Codex 登录与 OpenCode provider 登录。 |
 | 配置 OpenCode + OpenRouter | `tu ai openrouter` | 在官方界面选择 OpenRouter，并自行输入 API Key。 |
 | 启动已配置的 OpenCode | `tu ai opencode` | 不修改 provider 配置。 |
+| 单次非交互执行 OpenCode | `tu ai opencode run "说明当前目录的结构"` | 参数会原样交给官方 `opencode` CLI。 |
 
 > [!NOTE]
 > Codex 和 OpenCode 默认优先通过 NVM 管理的 npm 安装，因此可执行文件通常位于 NVM 的 Node 路径中。新版 `tu ai codex`、`tu ai opencode`、`tu ai login` 和 `tu ai openrouter` 会自动加载 NVM。若使用的是尚未重新执行 `./install.sh` 的旧版 `tu`，或排查时直接运行 `codex` / `opencode` 报“command not found”，先执行 `source ~/.nvm/nvm.sh`，再重试；随后在仓库的 `ai-dev-env-init` 目录重新运行 `./install.sh` 以更新 `tu`。
 
 脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。OpenRouter API Key 属于敏感凭据：不要写入项目文件、Git 配置、Shell 历史或仓库。
+
+### 单独使用 OpenCode 与配置 DeepSeek
+
+只使用 OpenCode 时无需配置或登录 Codex。在 WSL2 Ubuntu 或 macOS 的终端逐行执行；若已安装 `lite`，只需执行第一行：
+
+```bash
+tu install opencode --yes
+tu ai opencode
+```
+
+进入 OpenCode TUI 后，输入 `/connect`，搜索并选择 **DeepSeek**，再按提示输入你在 DeepSeek 开放平台创建的 API Key。随后输入 `/models`，选择当前列表中的 DeepSeek 模型；模型列表以当前账号和 OpenCode 版本显示为准，不要在项目中硬编码模型名或 Key。完成后可直接在项目目录使用：
+
+```bash
+# 交互式开发
+tu ai opencode
+
+# 非交互式单次任务；等价于官方 opencode run
+tu ai opencode run "检查当前改动并只列出高风险问题"
+
+# 指定已由 /models 显示的 provider/model
+tu ai opencode run --model "deepseek/<模型名>" "为这个模块生成测试建议"
+```
+
+`tu ai opencode [args...]` 会自动加载 NVM，并把后续参数原样转发给官方 OpenCode CLI；因此也可使用 `--continue`、`--session`、`--format json` 等官方参数。DeepSeek 的 Key 应仅在 OpenCode 的交互提示中输入；不要放入 `opencode.json`、仓库 `.env`、Shell 历史、提交记录或 CI 日志。无图形交互的 CI/服务器场景应使用平台批准的密钥注入机制，并在 OpenCode 官方文档确认当前环境变量名称后再配置。
 
 ### AI 项目初始化
 
