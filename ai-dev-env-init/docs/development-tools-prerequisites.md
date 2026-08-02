@@ -134,7 +134,7 @@ tu install opencode --yes
 tu ai opencode
 ~~~
 
-在 TUI 内输入 `/connect`，选择 **DeepSeek** 并按提示输入 API Key；再输入 `/models`，从当前账号可见的列表选择模型。用于脚本或单次任务时，`tu ai opencode` 可直接转发官方参数：
+在 TUI 内输入 `/connect`，选择 **DeepSeek**。API Key 请先在 [DeepSeek 开放平台的 API Keys 页面](https://platform.deepseek.com/api_keys) 创建，再按 OpenCode 提示输入；随后输入 `/models`，从当前账号可见的列表选择模型。用于脚本或单次任务时，`tu ai opencode` 可直接转发官方参数：
 
 ~~~bash
 tu ai opencode run "审查当前变更，列出必须修复的问题"

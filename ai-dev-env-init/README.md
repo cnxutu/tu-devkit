@@ -301,7 +301,7 @@ tu install opencode --yes
 tu ai opencode
 ```
 
-进入 OpenCode TUI 后，输入 `/connect`，搜索并选择 **DeepSeek**，再按提示输入你在 DeepSeek 开放平台创建的 API Key。随后输入 `/models`，选择当前列表中的 DeepSeek 模型；模型列表以当前账号和 OpenCode 版本显示为准，不要在项目中硬编码模型名或 Key。完成后可直接在项目目录使用：
+进入 OpenCode TUI 后，输入 `/connect`，搜索并选择 **DeepSeek**。API Key 请先在 [DeepSeek 开放平台的 API Keys 页面](https://platform.deepseek.com/api_keys) 创建，再按 OpenCode 提示输入。随后输入 `/models`，选择当前列表中的 DeepSeek 模型；模型列表以当前账号和 OpenCode 版本显示为准，不要在项目中硬编码模型名或 Key。完成后可直接在项目目录使用：
 
 ```bash
 # 交互式开发
