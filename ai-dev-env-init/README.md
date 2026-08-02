@@ -76,7 +76,10 @@ flowchart LR
 
 `tu ai login` 会依次要求 Codex 和 OpenCode 都已安装；只想使用 Codex 时，请优先使用 `tu ai codex`，不必等待 OpenCode。
 
-### `tu check` 缺失项怎么补
+> [!NOTE]
+> 如果 `tu install standard --yes` 被网络、`Ctrl+C` 或某个安装器中断，`tu check` 出现红色缺失项并不代表要从头清理环境。先按下面的补救步骤处理，再回到上方最短 Codex 开发路径。
+
+### 安装中断或 tu check 缺失时怎么办
 
 如果上一次标准版安装被中断，首选直接重跑：
 

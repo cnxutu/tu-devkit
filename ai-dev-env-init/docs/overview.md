@@ -153,7 +153,7 @@ flowchart TD
 
 ### 缺失项的最小补救
 
-安装中断后优先重跑 `tu install standard --yes`。只补局部能力时，使用 `tu install node --yes`、`tu install python --yes`、`tu install ai --yes` 或 `tu install java --yes`，然后重新执行 `tu check`。GitHub CLI、lazygit、Docker daemon 和 VS Code Remote - WSL 不阻塞 Codex；完整映射见 [README 的缺失项补救表](../README.md#tu-check-缺失项怎么补)。
+安装中断后优先重跑 `tu install standard --yes`，然后重新执行 `tu check`。具体哪些缺失项阻塞 Codex、哪些可按项目需要再补，以及各模块的精确补救命令，统一在 [README](../README.md) 的“安装中断或 tu check 缺失时怎么办”部分维护。
 
 ## 命令内部流向
 
