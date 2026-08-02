@@ -23,6 +23,16 @@ ensure_packages() {
   done
   if ((${#missing[@]})); then install_packages "${missing[@]}"; fi
 }
+download_with_retry() {
+  local url="$1" destination="$2" label="$3"
+  log_info "Downloading ${label} (connection timeout: 60s; total timeout: 300s; retries: 3)"
+  if curl --fail --location --show-error --progress-bar --retry 3 --retry-delay 2 --connect-timeout 60 --max-time 300 "$url" -o "$destination"; then
+    log_ok "Downloaded ${label}"
+  else
+    log_error "Unable to download ${label}; check your network or proxy, then rerun the same tu command"
+    return 1
+  fi
+}
 install_base() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then
     ensure_packages git:git curl:curl wget:wget unzip:unzip zip:zip jq:jq tree:tree make:make ca-certificates:ca-certificates gpg:gnupg ssh:openssh-client zsh:zsh
@@ -133,10 +143,19 @@ install_node() {
   mkdir -p "$nvm_dir"
   if [[ ! -s "$nvm_dir/nvm.sh" ]]; then
     confirm "Install NVM from the official GitHub release?" || return 0
-    local tmp; tmp="$(mktemp)"; curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh -o "$tmp"; PROFILE=/dev/null NVM_DIR="$nvm_dir" bash "$tmp"; rm -f "$tmp"
+    local tmp; tmp="$(mktemp)"
+    download_with_retry 'https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh' "$tmp" 'NVM installer' || { rm -f "$tmp"; return 1; }
+    PROFILE=/dev/null NVM_DIR="$nvm_dir" bash "$tmp"
+    rm -f "$tmp"
   fi
   safe_source "$nvm_dir/nvm.sh"
-  if declare -F nvm >/dev/null 2>&1; then nvm install --lts; nvm alias default 'lts/*'; corepack enable 2>/dev/null || true; has pnpm || npm install --global pnpm; fi
+  if declare -F nvm >/dev/null 2>&1; then
+    log_info 'Installing or verifying Node.js LTS with NVM'
+    nvm install --lts
+    nvm alias default 'lts/*'
+    corepack enable 2>/dev/null || true
+    has pnpm || { log_info 'Installing pnpm'; npm install --global pnpm; }
+  fi
 }
 install_python() {
   if [[ "$PACKAGE_MANAGER" == apt ]]; then ensure_packages python3:python3 python3-pip:python3-pip pipx:pipx
@@ -144,7 +163,10 @@ install_python() {
   fi
   if [[ "$DRY_RUN" == 1 ]]; then log_info '[DRY-RUN] install uv with the official installer if missing'; return 0; fi
   if ! has uv && confirm 'Install uv using the official installer?'; then
-    local tmp; tmp="$(mktemp)"; curl -LsSf https://astral.sh/uv/install.sh -o "$tmp"; sh "$tmp"; rm -f "$tmp"
+    local tmp; tmp="$(mktemp)"
+    download_with_retry 'https://astral.sh/uv/install.sh' "$tmp" 'uv installer' || { rm -f "$tmp"; return 1; }
+    sh "$tmp"
+    rm -f "$tmp"
   fi
 }
 install_docker() {
@@ -160,10 +182,12 @@ install_official_script() {
   if [[ "$DRY_RUN" == 1 ]]; then log_info "[DRY-RUN] download and run official installer for $label: $url"; return 0; fi
   confirm "从官方地址安装 ${label}？" || return 0
   tmp="$(mktemp)"
-  if curl -fsSL "$url" -o "$tmp" && grep -Eiq '(codex|opencode)' "$tmp"; then
+  if download_with_retry "$url" "$tmp" "${label} installer" && grep -Eiq '(codex|opencode)' "$tmp"; then
     bash "$tmp"
   else
     log_error "无法验证 ${label} 官方安装脚本，已停止执行"
+    rm -f "$tmp"
+    return 1
   fi
   rm -f "$tmp"
 }

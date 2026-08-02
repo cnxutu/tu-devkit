@@ -99,13 +99,17 @@ tu install standard --yes
 tu doctor
 ~~~
 
+`standard` 会依次安装或检查 Java、Maven、Node、Python 与 AI 工具。下载 NVM、uv 或官方安装器时会显示当前阶段、进度、60 秒连接超时、300 秒总超时和最多 3 次重试。若网络仍不可用或误按 `Ctrl+C` 中断，可直接重新执行同一条 `tu install standard --yes`：已完成的包、Maven 配置和 NVM/Node 安装会被识别并跳过或补全，无需删除 `~/.m2`、`~/.nvm` 或其他用户目录。
+
 或者只准备 AI 项目基础环境：
 
 ~~~bash
 tu setup ai --dry-run
 tu setup ai --yes
-tu ai login
+tu ai codex
 ~~~
+
+只想开始 Codex 开发时，`tu ai codex` 即可启动登录；`tu ai login` 会额外要求 OpenCode 也已安装，适合同时使用两种 AI CLI 的场景。
 
 ## 3. Windows 宿主机集成（仅 WSL2）
 

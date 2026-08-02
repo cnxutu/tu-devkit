@@ -128,6 +128,33 @@ flowchart TD
 
 推荐先执行 `--dry-run` 查看计划。`standard` 是完整的 AI 全栈环境；只准备 AI 项目基础环境时，可以使用 `tu setup ai --dry-run` 和 `tu setup ai --yes`。
 
+## 首次开始 Codex 开发
+
+不需要等待所有可选工具都安装完。首次安装被网络或 `Ctrl+C` 中断时，直接重复同一条标准版命令即可；已完成的步骤会跳过或补全。
+
+```mermaid
+flowchart TD
+    A["tu install standard --yes"] --> B["tu check"]
+    B --> C{"Codex CLI 是否为 ✓？"}
+    C -->|"否"| A
+    C -->|"是"| D["tu ai codex"]
+    D --> E["首次选择 Sign in with ChatGPT"]
+    E --> F["进入项目目录并运行 codex"]
+```
+
+| 项目 | 对 Codex 首次开发是否阻塞 |
+| --- | --- |
+| Git、Node/npm/pnpm、Codex CLI | 阻塞：缺失时重跑 `tu install standard --yes`。 |
+| Python/pip/uv、Java/Maven/Gradle | 仅相应语言项目需要。 |
+| Docker daemon、VS Code Remote - WSL | 仅容器或 VS Code 图形工作流需要。 |
+| GitHub CLI、lazygit、OpenCode | 可选；不阻塞 Codex。 |
+
+`tu ai login` 会同时要求 Codex 与 OpenCode，因此只使用 Codex 时直接运行 `tu ai codex`。
+
+### 缺失项的最小补救
+
+安装中断后优先重跑 `tu install standard --yes`。只补局部能力时，使用 `tu install node --yes`、`tu install python --yes`、`tu install ai --yes` 或 `tu install java --yes`，然后重新执行 `tu check`。GitHub CLI、lazygit、Docker daemon 和 VS Code Remote - WSL 不阻塞 Codex；完整映射见 [README 的缺失项补救表](../README.md#tu-check-缺失项怎么补)。
+
 ## 命令内部流向
 
 从维护者视角看，命令执行链路如下：

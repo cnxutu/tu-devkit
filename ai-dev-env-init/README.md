@@ -38,7 +38,67 @@ tu doctor
 
 安装脚本会把完整运行包放到 `~/.local/share/tu-devkit`，并把 `tu` wrapper 放到 `~/.local/bin`；当前 PATH 中存在可写目录时还会同步放置 wrapper，因此 macOS Homebrew 环境通常无需重新打开终端即可执行。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。如果当前没有可写的 PATH 目录，安装器会提示执行 `source ~/.zshrc` 或 `source ~/.bashrc`。
 
+运行 `tu install standard --yes` 时，NVM、uv 和 AI 官方安装器的下载会显示阶段与进度，并设置 60 秒连接超时、300 秒总超时和重试。若网络异常或误按 `Ctrl+C`，可直接重新执行相同命令；已完成的系统包、Maven 配置和 NVM/Node 安装会跳过或补全，不需要删除用户目录后重来。
+
 支持的目标环境是 macOS，以及 Windows 11/10 中的 Ubuntu WSL2。Windows 原生 PowerShell 不在本项目范围内；请在 WSL2 Ubuntu 终端中运行本工具。
+
+### 标准版后：最短 Codex 开发路径
+
+首次安装或中断后恢复时，只需逐行执行：
+
+```bash
+tu install standard --yes
+tu check
+tu ai codex
+```
+
+`tu ai codex` 会打开 Codex CLI；首次启动时在界面中选择 **Sign in with ChatGPT**。登录后，在项目目录直接运行 `codex` 即可开始 AI 开发。
+
+```mermaid
+flowchart LR
+    A["tu install standard --yes"] --> B["tu check"]
+    B --> C{"Codex CLI 是否为 ✓？"}
+    C -->|"否"| A
+    C -->|"是"| D["tu ai codex"]
+    D --> E["Sign in with ChatGPT"]
+    E --> F["在项目目录运行 codex"]
+```
+
+`tu check` 中的项目按以下方式判断，不需要等所有项目都满足才开始使用 Codex：
+
+| 类别 | 用于开始 Codex 开发 | 说明 |
+| --- | --- | --- |
+| Git、Node/npm/pnpm、Codex CLI | 必需 | 代码协作、CLI 运行与登录的最小基础。首次中断后缺失时，重跑 `tu install standard --yes`。 |
+| Python、pip、uv | 按项目需要 | Python 项目、脚本或 AI SDK 才需要。 |
+| Java、Maven、Gradle | 按项目需要 | Java 项目才需要；Maven 镜像会随 Java 模块配置。 |
+| Docker daemon、VS Code Remote - WSL | 按项目需要 | 容器项目或使用 VS Code 图形界面时再处理。Docker CLI 存在但 daemon 不可用不阻塞 Codex。 |
+| GitHub CLI、lazygit、OpenCode | 可选 | 方便 GitHub/终端工作流或使用第二个 AI 工具；不阻塞 Codex。 |
+
+`tu ai login` 会依次要求 Codex 和 OpenCode 都已安装；只想使用 Codex 时，请优先使用 `tu ai codex`，不必等待 OpenCode。
+
+### `tu check` 缺失项怎么补
+
+如果上一次标准版安装被中断，首选直接重跑：
+
+```bash
+tu install standard --yes
+tu check
+```
+
+如果只想补齐某类工具，可按 `tu check` 的缺失项执行对应命令，再执行一次 `tu check`：
+
+| `tu check` 缺失项 | 补救命令 | 是否阻塞 Codex |
+| --- | --- | --- |
+| Node、npm、pnpm、NVM | `tu install node --yes` | 是 |
+| Python、pip、uv | `tu install python --yes` | 仅 Python 项目 |
+| Codex CLI、OpenCode | `tu install ai --yes` | 仅 Codex CLI 阻塞；OpenCode 可选 |
+| Java、Maven、Gradle | `tu install java --yes` | 仅 Java 项目 |
+| GitHub CLI、lazygit | `tu install base --yes` | 否 |
+| Git | `tu install git --yes` | 是 |
+| Docker daemon | 在 Docker Desktop 启用 WSL Integration 后重开 WSL | 仅容器项目 |
+| VS Code `code` | 安装 Windows VS Code 与 Remote - WSL；从 WSL 执行 `code .` | 否 |
+
+`tu install base --yes` 后 GitHub CLI 或 lazygit 仍缺失时，通常是当前 apt 软件源没有提供该包；这不影响 Codex 使用，可在需要 GitHub CLI 工作流时再单独处理。
 
 ## 配置档案
 
@@ -161,38 +221,18 @@ tu version                      显示版本
 
 如果安装 VS Code 后找不到 `code` 命令，请在 macOS 的 VS Code Command Palette 中执行 **Shell Command: Install 'code' command in PATH**；Ubuntu WSL2 用户请安装并启用 VS Code WSL integration。
 
-## 一键准备 AI 开发环境
+## AI 登录与启动（按需）
 
-标准版会安装或检查 Codex CLI 和 OpenCode。安装完成后执行：
+标准版会尝试安装 Codex CLI 和 OpenCode，但只使用 Codex 时无需等待或配置 OpenCode。选择一条与你目标相符的命令即可：
 
-```bash
-tu doctor
-tu ai login
-```
+| 目标 | 执行命令 | 需要的额外操作 |
+| --- | --- | --- |
+| 只使用 Codex（推荐起步） | `tu ai codex` | 首次在界面选择 **Sign in with ChatGPT**。 |
+| 同时使用 Codex 和 OpenCode | `tu ai login` | 依次完成 Codex 登录与 OpenCode provider 登录。 |
+| 配置 OpenCode + OpenRouter | `tu ai openrouter` | 在官方界面选择 OpenRouter，并自行输入 API Key。 |
+| 启动已配置的 OpenCode | `tu ai opencode` | 不修改 provider 配置。 |
 
-首次运行 `tu ai login` 时：
-
-1. Codex 会打开交互式登录流程，请选择 `Sign in with ChatGPT`。
-2. Codex 退出后，OpenCode 会运行 `opencode auth login`，按提示选择 provider 并完成登录。
-3. 登录完成后，可在任意项目目录执行 `tu ai codex` 或 `tu ai opencode`。
-
-脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。
-
-### 选择 AI 工具
-
-#### 只使用 Codex
-
-执行 `tu ai codex`，首次运行时选择 ChatGPT 登录。此方式不需要 OpenRouter，适合希望直接使用 OpenAI 代码代理的场景。
-
-#### OpenCode + OpenRouter
-
-先执行 `tu install standard --yes`，再执行 `tu ai openrouter`。命令会打开 OpenCode 的官方 provider 登录流程；请选择 OpenRouter，并自行输入从 OpenRouter 账户获得的 API Key。OpenRouter 的模型调用可能产生费用，请在使用前确认账户额度和模型价格。
-
-#### 只使用已配置的 OpenCode
-
-执行 `tu ai opencode`。它只启动 OpenCode，不修改 provider，也不要求配置 OpenRouter。
-
-OpenRouter API Key 属于敏感凭据：不要把它写入项目文件、Git 配置、Shell 历史或仓库。`tu ai openrouter` 不接收、保存或回显该 Key；认证配置由 OpenCode 的官方交互流程处理。
+脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。OpenRouter API Key 属于敏感凭据：不要写入项目文件、Git 配置、Shell 历史或仓库。
 
 ### AI 项目初始化
 
@@ -270,7 +310,7 @@ sudo chown -R "$(id -un):$(id -gn)" /path/to/tu-devkit
 
 ### 安装完成的判断
 
-`tu doctor` 中 Codex CLI、OpenCode、Node、Git、Java、Python 和 Docker CLI 应显示 `✓`。Docker daemon 和 VS Code Remote - WSL 属于宿主机/集成状态，可能需要按上面的说明手动处理。账号登录成功后，`tu ai login` 才算完成。
+完整 `standard` 环境以 `tu doctor --strict` 通过为准。若目标只是开始 Codex 开发，遵循上方“最短 Codex 开发路径”即可；Docker daemon、OpenCode、Java/Python 等按项目需要补齐。
 
 ### macOS 一次性权限建议
 
