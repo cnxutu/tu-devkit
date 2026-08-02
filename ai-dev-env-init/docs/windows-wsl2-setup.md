@@ -113,13 +113,16 @@ touch /data/workspace/.write-test && rm /data/workspace/.write-test
 
 安装 Windows VS Code 和 Remote - WSL 扩展，在 Ubuntu 项目目录执行 code .。Docker Desktop 中启用 Ubuntu 的 WSL Integration，并将 Disk image location 改到 D 盘；不要同时启动 Ubuntu 内第二个 Docker daemon。
 
+克隆仓库前，先按 [README 的 GitHub SSH 前置步骤](../README.md#前置安装-git-与-github-ssh) 生成公钥、在 GitHub 网页添加 **Authentication Key**，并通过 `ssh -T git@github.com` 验证。这个网页授权步骤需要用户亲自完成。
+
 ~~~bash
 cd /data/workspace
-git clone https://github.com/<username>/tu-devkit.git
+git clone git@github.com:cnxutu/tu-devkit.git
 cd tu-devkit/ai-dev-env-init
 chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
+tu setup git --email "你的 GitHub 邮箱"  # 仅在还没有 SSH key 时执行
 tu setup wsl --dry-run
 tu setup ai --dry-run
 tu doctor

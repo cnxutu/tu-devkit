@@ -6,7 +6,7 @@
 
 ## 快速开始
 
-### 前置安装 Git
+### 前置安装 Git 与 GitHub SSH
 
 如果使用 `git clone`，请先安装 Git：
 
@@ -30,6 +30,22 @@ sudo apt install -y git
 ```
 
 如果不想预先安装 Git，也可以从 GitHub 下载 ZIP；运行 AI 初始化模块的 `./install.sh` 后，标准 profile 会尝试安装 Git。
+
+如果要使用 `git@github.com:...` 的 SSH 地址克隆仓库，安装 Git 后还需先生成并登记 SSH 公钥。此步骤需要用户在 GitHub 网页参与完成，不能由初始化脚本代替：
+
+```bash
+ssh-keygen -t ed25519 -C "你的 GitHub 邮箱"
+cat ~/.ssh/id_ed25519.pub
+```
+
+复制输出的整行公钥（以 `ssh-ed25519` 开头），打开 [GitHub SSH key 设置页](https://github.com/settings/ssh/new)，选择 **Authentication Key** 并粘贴保存。随后验证并克隆：
+
+```bash
+ssh -T git@github.com
+git clone git@github.com:cnxutu/tu-devkit.git
+```
+
+首次执行 `ssh -T` 时出现 GitHub 主机真实性确认是正常的。先对照 [GitHub 公布的 SSH 主机指纹](https://docs.github.com/authentication/keeping-your-account-and-data-secure/githubs-ssh-key-fingerprints)，确认无误后输入 `yes`。只上传 `.pub` 公钥，绝不复制或上传 `~/.ssh/id_ed25519` 私钥。
 
 ### 安装 AI 开发环境初始化模块
 
@@ -143,6 +159,8 @@ tu install docker               安装或检查单个模块
 tu check                        快速诊断
 tu doctor --verbose             详细诊断
 tu doctor --strict              严格诊断，问题时返回非零退出码
+tu setup git --email you@example.com 生成并展示 GitHub SSH 公钥
+tu setup git --test             添加公钥后测试 GitHub SSH 连接
 tu install standard --dry-run  只展示安装/修改计划，不写入环境
 tu update                       查看并确认安全更新
 tu list                         列出配置档案和模块
@@ -358,7 +376,13 @@ git config --global user.email "你的邮箱"
 git config --global init.defaultBranch main
 ```
 
-推荐使用 SSH 连接 GitHub。工具不会自动生成或上传私钥；需要时手动执行：
+推荐使用 SSH 连接 GitHub。安装完 `tu` 后，可以让它在不覆盖既有密钥的前提下生成并展示公钥：
+
+```bash
+tu setup git --email "你的 GitHub 邮箱"
+```
+
+该命令只生成本机密钥并显示 `.pub` 公钥；它不会上传密钥、打开浏览器或替你授予 GitHub 权限。也可以手动执行：
 
 ```bash
 ssh-keygen -t ed25519 -C "你的邮箱"
@@ -368,10 +392,12 @@ pbcopy < ~/.ssh/id_ed25519.pub          # macOS
 clip.exe < ~/.ssh/id_ed25519.pub        # WSL2 Ubuntu，可复制到 Windows 剪贴板
 ```
 
-然后将公钥添加到 GitHub 的 SSH keys 页面，并测试：
+然后将公钥添加到 [GitHub SSH key 设置页](https://github.com/settings/ssh/new)，并测试：
 
 ```bash
 ssh -T git@github.com
+# 或在已添加公钥后：
+tu setup git --test
 ```
 
 GitHub CLI 登录是另一条独立的认证路径：

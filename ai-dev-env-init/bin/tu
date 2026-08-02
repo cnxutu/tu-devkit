@@ -9,6 +9,7 @@ source "${TU_ROOT}/scripts/doctor.sh"
 source "${TU_ROOT}/scripts/update.sh"
 source "${TU_ROOT}/scripts/setup-wsl.sh"
 source "${TU_ROOT}/scripts/setup-ai.sh"
+source "${TU_ROOT}/scripts/setup-git.sh"
 VERSION="0.1.0"
 usage() { cat <<'EOF'
 Tu DevKit - 开发环境初始化与维护工具
@@ -36,7 +37,8 @@ main() {
       case "$target" in
         wsl) setup_wsl_main "$@" ;;
         ai) setup_ai_main "$@" ;;
-        *) printf '环境初始化命令:\n  tu setup ai [--yes] [--dry-run]     初始化 AI 开发环境\n  tu setup wsl [--yes] [--path DIR]    修复 Ubuntu WSL2 开发目录和权限\n';;
+        git) setup_git_main "$@" ;;
+        *) printf '环境初始化命令:\n  tu setup ai [--yes] [--dry-run]                 初始化 AI 开发环境\n  tu setup wsl [--yes] [--path DIR]                修复 Ubuntu WSL2 开发目录和权限\n  tu setup git [--email EMAIL] [--test] [--yes]    生成并展示 GitHub SSH 公钥\n';;
       esac
       ;;
     list) list_profiles ;;
