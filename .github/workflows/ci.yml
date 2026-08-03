@@ -19,11 +19,13 @@ jobs:
 
       - name: Run Bash tests
         shell: bash
-        run: bash ai-dev-env-init/tests/run.sh
+        run: |
+          bash ai-dev-env-init/tests/run.sh
+          bash vps-init/tests/run.sh
 
       - name: Run syntax checks
         shell: bash
-        run: bash -n ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh
+        run: bash -n ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh vps-init/install.sh vps-init/doctor.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
 
       - name: Install ShellCheck
         shell: bash
@@ -39,7 +41,7 @@ jobs:
 
       - name: Run ShellCheck
         shell: bash
-        run: shellcheck ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh
+        run: shellcheck ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh vps-init/install.sh vps-init/doctor.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
 
       - name: Validate AI guidance
         shell: bash

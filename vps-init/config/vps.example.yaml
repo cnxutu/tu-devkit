@@ -1,0 +1,17 @@
+# Copy to vps.local.yaml. Do not store passwords, private keys, or real endpoints here.
+ssh:
+  port: 22222
+  disable_root_login: true
+  admin_authorized_keys_path: /root/.ssh/authorized_keys
+wireguard:
+  enabled: false
+  port: 60273
+  ipv4_cidr: 10.66.66.0/24
+  ipv6_enabled: false
+  endpoint: ""
+  outbound_interface: ""
+sing_box:
+  enabled: false
+  port: 8080
+  listen: 0.0.0.0
+  method: 2022-blake3-aes-128-gcm

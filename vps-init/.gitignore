@@ -1,0 +1,6 @@
+vps.local.yaml
+.env
+output/
+logs/
+state/
+secrets/
