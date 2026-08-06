@@ -67,8 +67,8 @@ dns:
     - '*.lan'
     - '*.local'
     - localhost.ptlogin2.qq.com
-    - +.msftconnecttest.com
-    - +.msftncsi.com
+    - '+.msftconnecttest.com'
+    - '+.msftncsi.com'
 
 rules:
   # ChatGPT 页面、登录、静态资源、验证、上传和流式连接必须使用同一代理。
@@ -148,5 +148,5 @@ rules:
   - DOMAIN-SUFFIX,apple.com,🚀 Proxy
   - DOMAIN-SUFFIX,microsoft.com,🚀 Proxy
   - DOMAIN-SUFFIX,office.com,🚀 Proxy
-  - GEOIP,CN,DIRECT
-  - MATCH,🚀 Proxy
+  - 'GEOIP,CN,DIRECT'
+  - 'MATCH,🚀 Proxy'
