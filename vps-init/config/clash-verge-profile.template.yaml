@@ -1,4 +1,4 @@
-# Clash Meta / Mihomo 客户端配置模板
+# Clash Verge 代理配置模板（使用 Mihomo 内核）
 # 使用前必须替换 VPS-SantaClara 的 server/port/password；不要提交真实凭据。
 
 mixed-port: 7890
