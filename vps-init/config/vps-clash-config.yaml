@@ -63,6 +63,22 @@ dns:
     '+.oaiusercontent.com':
       - https://1.1.1.1/dns-query
       - https://8.8.8.8/dns-query
+    '+.openaiusercontent.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    # Postman 的云端同步、认证与工作区接口使用境外 DoH。
+    '+.postman.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.getpostman.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.postmanlabs.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.pstmn.io':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
   fake-ip-filter:
     - '*.lan'
     - '*.local'
@@ -94,6 +110,13 @@ rules:
   - DOMAIN-SUFFIX,statsig.com,🚀 Proxy
   - DOMAIN-SUFFIX,arkoselabs.com,🚀 Proxy
   - DOMAIN-SUFFIX,client-api.arkoselabs.com,🚀 Proxy
+
+  # Postman 客户端的登录、同步、集合与工作区请求优先走代理；
+  # 不影响在 Postman 中请求的其他业务 API，它们仍按后续 GEOIP/MATCH 决策。
+  - DOMAIN-SUFFIX,postman.com,🚀 Proxy
+  - DOMAIN-SUFFIX,getpostman.com,🚀 Proxy
+  - DOMAIN-SUFFIX,postmanlabs.com,🚀 Proxy
+  - DOMAIN-SUFFIX,pstmn.io,🚀 Proxy
 
   # 其他海外服务
   - DOMAIN-SUFFIX,github.com,🚀 Proxy
