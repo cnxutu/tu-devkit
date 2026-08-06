@@ -1,0 +1,234 @@
+mixed-port: 7890
+allow-lan: false
+mode: rule
+log-level: info
+
+proxies:
+  - name: ["VPS-SantaClara"]
+    type: ["ss", "vmess", "trojan"]
+    server: [your server]
+    port: [your port]
+    cipher: [your clipher]
+    password: [your password]
+
+proxy-groups:
+  - name: 🚀 Proxy
+    type: select
+    proxies:
+      - VPS-SantaClara
+      - DIRECT
+
+dns:
+  enable: true
+  listen: 0.0.0.0:1053
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  nameserver:
+    - https://dns.alidns.com/dns-query
+
+  fallback:
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
+    - https://dns.google/dns-query
+
+  fallback-filter:
+    geoip: true
+    geoip-code: CN
+    ipcidr:
+      - 240.0.0.0/4
+
+rules:
+  # =====================================
+  # AI / LLM
+  # =====================================
+
+
+  # ChatGPT
+  - DOMAIN-SUFFIX,chatgpt.com,🚀 Proxy
+  - DOMAIN-SUFFIX,openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,api.openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,auth.openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,auth0.com,🚀 Proxy
+  - DOMAIN-SUFFIX,oaistatic.com,🚀 Proxy
+  - DOMAIN-SUFFIX,oaiusercontent.com,🚀 Proxy
+  - DOMAIN-SUFFIX,openaiusercontent.com,🚀 Proxy
+  - DOMAIN-SUFFIX,cdn.openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,files.openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,realtime.openai.com,🚀 Proxy
+  - DOMAIN-SUFFIX,platform.openai.com,🚀 Proxy
+
+  # Cloudflare
+  - DOMAIN-SUFFIX,cloudflare.com,🚀 Proxy
+  - DOMAIN-SUFFIX,cloudflare.net,🚀 Proxy
+  - DOMAIN-SUFFIX,cloudflareinsights.com,🚀 Proxy
+
+  # Microsoft Azure
+  - DOMAIN-SUFFIX,azure.com,🚀 Proxy
+  - DOMAIN-SUFFIX,azureedge.net,🚀 Proxy
+  - DOMAIN-SUFFIX,windows.net,🚀 Proxy
+
+  # Web资源
+  - DOMAIN-SUFFIX,fonts.googleapis.com,🚀 Proxy
+  - DOMAIN-SUFFIX,fonts.gstatic.com,🚀 Proxy
+
+  - DOMAIN-SUFFIX,cdnjs.cloudflare.com,🚀 Proxy
+
+  # Claude
+  - DOMAIN-SUFFIX,anthropic.com,🚀 Proxy
+  - DOMAIN-SUFFIX,claude.ai,🚀 Proxy
+
+
+  # Google AI
+  - DOMAIN-SUFFIX,gemini.google.com,🚀 Proxy
+  - DOMAIN-SUFFIX,bard.google.com,🚀 Proxy
+
+
+  # AI开发
+  - DOMAIN-SUFFIX,huggingface.co,🚀 Proxy
+  - DOMAIN-SUFFIX,hf.co,🚀 Proxy
+  - DOMAIN-SUFFIX,paperswithcode.com,🚀 Proxy
+  - DOMAIN-SUFFIX,arxiv.org,🚀 Proxy
+
+
+
+  # =====================================
+  # Git / 开源社区
+  # =====================================
+
+  - DOMAIN-SUFFIX,github.com,🚀 Proxy
+  - DOMAIN-SUFFIX,githubusercontent.com,🚀 Proxy
+  - DOMAIN-SUFFIX,githubassets.com,🚀 Proxy
+  - DOMAIN-SUFFIX,github.dev,🚀 Proxy
+  - DOMAIN-SUFFIX,github.io,🚀 Proxy
+  - DOMAIN-SUFFIX,github.blog,🚀 Proxy
+
+
+  - DOMAIN-SUFFIX,gitlab.com,🚀 Proxy
+  - DOMAIN-SUFFIX,bitbucket.org,🚀 Proxy
+
+
+
+  # =====================================
+  # Google 服务
+  # =====================================
+
+  - DOMAIN-SUFFIX,google.com,🚀 Proxy
+  - DOMAIN-SUFFIX,googleapis.com,🚀 Proxy
+  - DOMAIN-SUFFIX,gstatic.com,🚀 Proxy
+  - DOMAIN-SUFFIX,googleusercontent.com,🚀 Proxy
+  - DOMAIN-SUFFIX,ggpht.com,🚀 Proxy
+
+  # Google安全检测
+  - DOMAIN-SUFFIX,safebrowsing.googleapis.com,🚀 Proxy
+
+
+
+  # =====================================
+  # Java 后端开发
+  # =====================================
+
+  # Maven
+  - DOMAIN-SUFFIX,maven.org,🚀 Proxy
+  - DOMAIN-SUFFIX,maven.apache.org,🚀 Proxy
+  - DOMAIN-SUFFIX,repo1.maven.org,🚀 Proxy
+  - DOMAIN-SUFFIX,repo.maven.apache.org,🚀 Proxy
+
+
+  # Gradle
+  - DOMAIN-SUFFIX,gradle.org,🚀 Proxy
+  - DOMAIN-SUFFIX,gradle.com,🚀 Proxy
+  - DOMAIN-SUFFIX,plugins.gradle.org,🚀 Proxy
+
+
+  # Apache
+  - DOMAIN-SUFFIX,apache.org,🚀 Proxy
+
+
+
+  # =====================================
+  # Docker
+  # =====================================
+
+  - DOMAIN-SUFFIX,docker.com,🚀 Proxy
+  - DOMAIN-SUFFIX,docker.io,🚀 Proxy
+  - DOMAIN-SUFFIX,hub.docker.com,🚀 Proxy
+  - DOMAIN-SUFFIX,registry-1.docker.io,🚀 Proxy
+
+
+
+  # =====================================
+  # Node / 前端
+  # =====================================
+
+  - DOMAIN-SUFFIX,nodejs.org,🚀 Proxy
+  - DOMAIN-SUFFIX,npmjs.com,🚀 Proxy
+  - DOMAIN-SUFFIX,yarnpkg.com,🚀 Proxy
+  - DOMAIN-SUFFIX,unpkg.com,🚀 Proxy
+  - DOMAIN-SUFFIX,jsdelivr.com,🚀 Proxy
+
+
+
+  # =====================================
+  # Python / 数据科学
+  # =====================================
+
+  - DOMAIN-SUFFIX,pypi.org,🚀 Proxy
+  - DOMAIN-SUFFIX,python.org,🚀 Proxy
+
+
+
+  # =====================================
+  # 技术社区 / 文档
+  # =====================================
+
+  - DOMAIN-SUFFIX,stackoverflow.com,🚀 Proxy
+  - DOMAIN-SUFFIX,stackexchange.com,🚀 Proxy
+  - DOMAIN-SUFFIX,medium.com,🚀 Proxy
+
+
+  # =====================================
+  # 海外服务
+  # =====================================
+
+  - DOMAIN-SUFFIX,reddit.com,🚀 Proxy
+  - DOMAIN-SUFFIX,discord.com,🚀 Proxy
+  - DOMAIN-SUFFIX,telegram.org,🚀 Proxy
+
+
+  # =====================================
+  # 云服务
+  # =====================================
+
+  - DOMAIN-SUFFIX,cloudflare.com,🚀 Proxy
+  - DOMAIN-SUFFIX,cloudflare.dev,🚀 Proxy
+
+  - DOMAIN-SUFFIX,vercel.app,🚀 Proxy
+  - DOMAIN-SUFFIX,netlify.app,🚀 Proxy
+
+
+
+  # =====================================
+  # Apple / Microsoft
+  # =====================================
+
+  - DOMAIN-SUFFIX,icloud.com,🚀 Proxy
+  - DOMAIN-SUFFIX,apple.com,🚀 Proxy
+
+  - DOMAIN-SUFFIX,microsoft.com,🚀 Proxy
+  - DOMAIN-SUFFIX,office.com,🚀 Proxy
+
+
+
+  # =====================================
+  # 国内直连
+  # =====================================
+
+  - GEOIP,CN,DIRECT
+
+
+  # =====================================
+  # 默认代理
+  # =====================================
+
+  - MATCH,🚀 Proxy
