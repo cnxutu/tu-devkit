@@ -8,6 +8,7 @@ endpoint="${SING_BOX_ENDPOINT:-}"; [[ -n "$endpoint" ]] || die 'Set SING_BOX_END
 password_file="${SING_BOX_PASSWORD_FILE:-${VPS_INIT_STATE_DIR}/secrets/sing-box-password}"; [[ -s "$password_file" ]] || die 'sing-box password file is missing.'
 output_dir="${VPS_INIT_OUTPUT_DIR:-$ROOT/output}"; ensure_private_dir "$output_dir"; output="$output_dir/vps-clash.yaml"
 cat > "$output" <<EOF
+disable-quic: true
 proxies:
   - name: VPS
     type: ss
@@ -15,6 +16,7 @@ proxies:
     port: $(config_value sing_box port)
     cipher: $(config_value sing_box method)
     password: $(< "$password_file")
+    udp: false
 proxy-groups:
   - name: Proxy
     type: select
