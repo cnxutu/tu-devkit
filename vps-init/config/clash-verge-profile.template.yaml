@@ -7,8 +7,9 @@ mode: rule
 log-level: info
 unified-delay: true
 tcp-concurrent: true
-# ChatGPT 的 SSE/长连接走 TCP，避免部分网络对 QUIC/HTTP3 的丢包导致页面卡住。
-disable-quic: true
+# 不全局禁用 QUIC：钉钉的部分媒体链路可能使用 HTTP/3/QUIC。
+# 需要限制单个应用协议时，应在该应用侧配置，避免影响国内 IM。
+disable-quic: false
 keep-alive-interval: 30
 
 proxies:
@@ -51,6 +52,27 @@ dns:
       - 240.0.0.0/4
   # OpenAI/ChatGPT 相关域名固定使用境外 DoH，避免污染或错误的 CN 结果。
   nameserver-policy:
+    # 钉钉及阿里云媒体 CDN 使用国内 DNS，避免境外 DoH 返回境外节点。
+    '+.dingtalk.com':
+      - https://dns.alidns.com/dns-query
+    '+.ddtalk.com':
+      - https://dns.alidns.com/dns-query
+    '+.dingtalkapps.com':
+      - https://dns.alidns.com/dns-query
+    '+.dingtalk.net':
+      - https://dns.alidns.com/dns-query
+    '+.dingtalk.cn':
+      - https://dns.alidns.com/dns-query
+    '+.ddurl.to':
+      - https://dns.alidns.com/dns-query
+    '+.ddimg.cn':
+      - https://dns.alidns.com/dns-query
+    '+.aliyuncs.com':
+      - https://dns.alidns.com/dns-query
+    '+.alicdn.com':
+      - https://dns.alidns.com/dns-query
+    '+.alibabausercontent.com':
+      - https://dns.alidns.com/dns-query
     '+.chatgpt.com':
       - https://1.1.1.1/dns-query
       - https://8.8.8.8/dns-query
@@ -87,6 +109,18 @@ dns:
     - '+.msftncsi.com'
 
 rules:
+  # 钉钉登录、消息和图片上传/下载走本地直连，避免被海外 VPS 或境外 CDN 拦截。
+  - DOMAIN-SUFFIX,dingtalk.com,DIRECT
+  - DOMAIN-SUFFIX,ddtalk.com,DIRECT
+  - DOMAIN-SUFFIX,dingtalkapps.com,DIRECT
+  - DOMAIN-SUFFIX,dingtalk.net,DIRECT
+  - DOMAIN-SUFFIX,dingtalk.cn,DIRECT
+  - DOMAIN-SUFFIX,ddurl.to,DIRECT
+  - DOMAIN-SUFFIX,ddimg.cn,DIRECT
+  - DOMAIN-SUFFIX,aliyuncs.com,DIRECT
+  - DOMAIN-SUFFIX,alicdn.com,DIRECT
+  - DOMAIN-SUFFIX,alibabausercontent.com,DIRECT
+
   # ChatGPT 页面、登录、静态资源、验证、上传和流式连接必须使用同一代理。
   - DOMAIN-SUFFIX,chatgpt.com,🚀 Proxy
   - DOMAIN-SUFFIX,chat.openai.com,🚀 Proxy
