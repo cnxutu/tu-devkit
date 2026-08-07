@@ -89,6 +89,29 @@ dns:
     '+.openaiusercontent.com':
       - https://1.1.1.1/dns-query
       - https://8.8.8.8/dns-query
+    # ChatGPT 网页还依赖认证、Cloudflare 校验和会话服务；路由走代理时 DNS
+    # 也必须保持一致，避免晚高峰下解析到不可达或错误的边缘节点。
+    '+.auth0.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.cloudflare.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.cloudflare.net':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.cloudflareinsights.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.arkoselabs.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.statsigapi.net':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
+    '+.statsig.com':
+      - https://1.1.1.1/dns-query
+      - https://8.8.8.8/dns-query
     # Postman 的云端同步、认证与工作区接口使用境外 DoH。
     '+.postman.com':
       - https://1.1.1.1/dns-query
