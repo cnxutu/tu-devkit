@@ -7,9 +7,8 @@ mode: rule
 log-level: info
 unified-delay: true
 tcp-concurrent: true
-# 不全局禁用 QUIC：钉钉的部分媒体链路可能使用 HTTP/3/QUIC。
-# 需要限制单个应用协议时，应在该应用侧配置，避免影响国内 IM。
-disable-quic: false
+# VPS sing-box/防火墙仅提供 TCP；提前禁用 QUIC，避免 ChatGPT/Codex 先走不可用 UDP 后重连。
+disable-quic: true
 keep-alive-interval: 30
 
 proxies:
@@ -20,8 +19,7 @@ proxies:
     port: 8080
     cipher: 2022-blake3-aes-128-gcm
     password: CHANGE_ME
-    # 仅禁用经 VPS 的 UDP（含 QUIC），使 ChatGPT 回退到稳定的 TCP；
-    # DIRECT 流量不受影响，钉钉仍可使用本地网络的 QUIC。
+    # 服务端仅开放 TCP；显式关闭节点 UDP，避免产生不可用的 QUIC 尝试。
     udp: false
 
 proxy-groups:
