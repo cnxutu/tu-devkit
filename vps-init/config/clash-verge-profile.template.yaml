@@ -20,6 +20,9 @@ proxies:
     port: 8080
     cipher: 2022-blake3-aes-128-gcm
     password: CHANGE_ME
+    # 仅禁用经 VPS 的 UDP（含 QUIC），使 ChatGPT 回退到稳定的 TCP；
+    # DIRECT 流量不受影响，钉钉仍可使用本地网络的 QUIC。
+    udp: false
 
 proxy-groups:
   - name: 🚀 Proxy
