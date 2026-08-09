@@ -13,12 +13,12 @@ keep-alive-interval: 30
 
 proxies:
   # vps-init/scripts/generate-clash-profile.sh 生成的是 Shadowsocks 2022 节点。
-  - name: VPS-SantaClara
+  - name: "VPS-SantaClara"
     type: ss
     server: your.server.example
     port: 8080
     cipher: 2022-blake3-aes-128-gcm
-    password: CHANGE_ME
+    password: "CHANGE_ME"
     # 服务端仅开放 TCP；显式关闭节点 UDP，避免产生不可用的 QUIC 尝试。
     udp: false
 
