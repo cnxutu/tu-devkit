@@ -1,6 +1,6 @@
 # VPS 网络环境初始化
 
-`vps-init` 是 `tu-devkit` 的顶层独立模块：它把一台 Ubuntu 22.04+ VPS 逐步变成可管理的个人网络节点。它不属于 `ai-dev-env-init`，不会被 `tu init` 或 `tu install <profile>` 自动调用。
+`vps-init` 是 `tu-devkit` 的顶层独立模块：它把一台 Ubuntu 22.04+ VPS 逐步变成可管理的个人网络节点。它不属于 `dev-env-init`，不会被 `tu init` 或 `tu install <profile>` 自动调用。
 
 本模块的原则是：**先可用、再可验证、最后加固**。不会把 SSH、VPN、代理和所有安全策略塞进一次不可逆的操作中。
 

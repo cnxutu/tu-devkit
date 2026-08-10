@@ -60,7 +60,7 @@ git pull --ff-only
 `git switch dev` 在本地已存在 `dev` 时会直接切换；首次克隆但只有 `origin/dev` 时，Git 会创建对应的本地分支。紧随其后的 `git branch --set-upstream-to=origin/dev dev` 会显式建立或确认本地 `dev` 与远端 `origin/dev` 的跟踪关系，可重复执行。不要对已存在的本地分支执行 `git switch --track origin/dev`，否则会报 `a branch named 'dev' already exists`。
 
 > [!IMPORTANT]
-> 当后续执行 `git pull` 拉到 `ai-dev-env-init` 的更新后，进入该目录再运行一次 `./install.sh`。仓库代码已更新不等于 `~/.local/share/tu-devkit` 中的已安装 `tu` 已更新；若跳过这一步，新增 profile 可能报 `Unknown module/profile`。
+> 当后续执行 `git pull` 拉到 `dev-env-init` 的更新后，进入该目录再运行一次 `./install.sh`。仓库代码已更新不等于 `~/.local/share/tu-devkit` 中的已安装 `tu` 已更新；若跳过这一步，新增 profile 可能报 `Unknown module/profile`。
 
 如果任务或 PR 明确指定了其他分支，再按实际分支名切换：
 
@@ -88,7 +88,7 @@ tu setup git --test
 在第 1 节完成分支确认或切换后，进入模块并安装：
 
 ~~~bash
-cd ai-dev-env-init
+cd dev-env-init
 chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -144,7 +144,7 @@ tu ai opencode run --model "deepseek/<模型名>" "解释测试失败原因"
 密钥只在 OpenCode 的交互提示中输入，不写入项目配置或版本库。CI、容器或远程主机等无交互环境，先按组织的密钥管理流程注入凭据，再以 [OpenCode Providers 文档](https://opencode.ai/docs/providers) 核对当前环境变量和 provider/model 标识。
 
 > [!NOTE]
-> Codex 与 OpenCode 默认安装到 NVM 管理的 Node 路径。新版 `tu ai codex`、`tu ai opencode`、`tu ai login`、`tu ai openrouter` 会自动加载 NVM。若旧版 `tu` 报 `Codex CLI 未安装`、`OpenCode 未安装` 或直接运行命令报 `command not found`，执行 `source ~/.nvm/nvm.sh` 后重试；再在 `ai-dev-env-init` 目录运行 `./install.sh` 更新已安装的 `tu` 副本。
+> Codex 与 OpenCode 默认安装到 NVM 管理的 Node 路径。新版 `tu ai codex`、`tu ai opencode`、`tu ai login`、`tu ai openrouter` 会自动加载 NVM。若旧版 `tu` 报 `Codex CLI 未安装`、`OpenCode 未安装` 或直接运行命令报 `command not found`，执行 `source ~/.nvm/nvm.sh` 后重试；再在 `dev-env-init` 目录运行 `./install.sh` 更新已安装的 `tu` 副本。
 
 ## 3. Windows 宿主机集成（仅 WSL2）
 

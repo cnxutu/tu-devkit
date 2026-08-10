@@ -1,6 +1,6 @@
 # AI 开发环境初始化
 
-`ai-dev-env-init` 是 `tu-devkit` 中的 AI 开发环境初始化工具集，基于 Bash，面向 macOS 和 Ubuntu WSL2，帮助快速搭建可复用的 AI 全栈开发环境。
+`dev-env-init` 是 `tu-devkit` 中的 AI 开发环境初始化工具集，基于 Bash，面向 macOS 和 Ubuntu WSL2，帮助快速搭建可复用的 AI 全栈开发环境。
 
 仓库级工具索引见 [tu-devkit README](../README.md)。
 
@@ -28,7 +28,7 @@ cd tu-devkit
 git switch dev
 git branch --set-upstream-to=origin/dev dev
 git pull --ff-only
-cd ai-dev-env-init
+cd dev-env-init
 chmod +x install.sh
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
@@ -39,7 +39,7 @@ tu check lite
 安装脚本会把完整运行包放到 `~/.local/share/tu-devkit`，并把 `tu` wrapper 放到 `~/.local/bin`；当前 PATH 中存在可写目录时还会同步放置 wrapper，因此 macOS Homebrew 环境通常无需重新打开终端即可执行。工具会自动识别 Homebrew 或 apt，已安装的命令会跳过；安装系统包或运行官方安装器前会请求确认。如果当前没有可写的 PATH 目录，安装器会提示执行 `source ~/.zshrc` 或 `source ~/.bashrc`。
 
 > [!IMPORTANT]
-> `git pull` 更新的是仓库工作区；`tu` 实际运行的是安装在 `~/.local/share/tu-devkit` 的副本。每次拉取包含 `ai-dev-env-init` 变更后，请在该目录重新运行一次 `./install.sh`，再执行 `tu check <profile>`。否则会继续运行旧版本，并可能出现 `Unknown module/profile: lite`。
+> `git pull` 更新的是仓库工作区；`tu` 实际运行的是安装在 `~/.local/share/tu-devkit` 的副本。每次拉取包含 `dev-env-init` 变更后，请在该目录重新运行一次 `./install.sh`，再执行 `tu check <profile>`。否则会继续运行旧版本，并可能出现 `Unknown module/profile: lite`。
 
 运行 `tu install lite|standard|ultimate --yes` 时，NVM 和 AI 官方安装器的下载会显示阶段与进度，并设置 60 秒连接超时、300 秒总超时和重试。`standard` 与 `ultimate` 中的 uv 默认使用 `pipx` 安装，显示 pip 下载进度，并使用 60 秒请求超时与 3 次重试；只有 `pipx` 不可用时才回退到官方安装器。若网络异常或误按 `Ctrl+C`，可直接重新执行相同命令；已完成的系统包、Maven 配置和 NVM/Node 安装会跳过或补全，不需要删除用户目录后重来。
 
@@ -288,7 +288,7 @@ tu version                      显示版本
 | 单次非交互执行 OpenCode | `tu ai opencode run "说明当前目录的结构"` | 参数会原样交给官方 `opencode` CLI。 |
 
 > [!NOTE]
-> Codex 和 OpenCode 默认优先通过 NVM 管理的 npm 安装，因此可执行文件通常位于 NVM 的 Node 路径中。新版 `tu ai codex`、`tu ai opencode`、`tu ai login` 和 `tu ai openrouter` 会自动加载 NVM。若使用的是尚未重新执行 `./install.sh` 的旧版 `tu`，或排查时直接运行 `codex` / `opencode` 报“command not found”，先执行 `source ~/.nvm/nvm.sh`，再重试；随后在仓库的 `ai-dev-env-init` 目录重新运行 `./install.sh` 以更新 `tu`。
+> Codex 和 OpenCode 默认优先通过 NVM 管理的 npm 安装，因此可执行文件通常位于 NVM 的 Node 路径中。新版 `tu ai codex`、`tu ai opencode`、`tu ai login` 和 `tu ai openrouter` 会自动加载 NVM。若使用的是尚未重新执行 `./install.sh` 的旧版 `tu`，或排查时直接运行 `codex` / `opencode` 报“command not found”，先执行 `source ~/.nvm/nvm.sh`，再重试；随后在仓库的 `dev-env-init` 目录重新运行 `./install.sh` 以更新 `tu`。
 
 脚本只负责安装 CLI 和启动官方登录流程，不会代填 API key、保存密钥到项目文件、生成 SSH key 或上传任何凭据。OpenRouter API Key 属于敏感凭据：不要写入项目文件、Git 配置、Shell 历史或仓库。
 
@@ -318,7 +318,7 @@ tu ai opencode run --model "deepseek/<模型名>" "为这个模块生成测试�
 
 ### AI 项目初始化
 
-当前文件包 `ai-dev-env-init/` 包含命令入口、配置档案、安装流程和测试。使用以下命令初始化适合 AI 项目的基础环境：
+当前文件包 `dev-env-init/` 包含命令入口、配置档案、安装流程和测试。使用以下命令初始化适合 AI 项目的基础环境：
 
 ```bash
 tu setup ai --dry-run
@@ -331,7 +331,7 @@ tu ai login
 ### macOS
 
 ```bash
-cd ai-dev-env-init
+cd dev-env-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 tu install lite --yes
@@ -348,7 +348,7 @@ tu ai login
 在 Ubuntu WSL2 终端中执行：
 
 ```bash
-cd ai-dev-env-init
+cd dev-env-init
 ./install.sh
 export PATH="$HOME/.local/bin:$PATH"
 tu install lite --yes
@@ -416,13 +416,13 @@ sudo chown -R "$(id -un):$(id -gn)" ~/workspace
 运行基础测试：
 
 ```bash
-bash ai-dev-env-init/tests/run.sh
+bash dev-env-init/tests/run.sh
 ```
 
 如果已安装 ShellCheck，可执行：
 
 ```bash
-shellcheck ai-dev-env-init/install.sh ai-dev-env-init/bin/tu ai-dev-env-init/bin/tu-wrapper ai-dev-env-init/lib/*.sh ai-dev-env-init/scripts/*.sh ai-dev-env-init/tests/*.sh
+shellcheck dev-env-init/install.sh dev-env-init/bin/tu dev-env-init/bin/tu-wrapper dev-env-init/lib/*.sh dev-env-init/scripts/*.sh dev-env-init/tests/*.sh
 ```
 
 仓库 CI 会在 Ubuntu 和 macOS 上运行基础测试、Bash 语法检查和 ShellCheck。

@@ -1,4 +1,4 @@
-# ai-dev-env-init 整体导览
+# dev-env-init 整体导览
 
 本文用来回答三个问题：
 
@@ -10,7 +10,7 @@
 
 ## 一图认识这个模块
 
-`ai-dev-env-init` 分为两层：
+`dev-env-init` 分为两层：
 
 - `./install.sh` 安装的是 **`tu` 命令本身**；
 - `tu init` 或 `tu install <profile>` 才会按照 Profile 安装或检查 **开发工具链**。
@@ -93,7 +93,7 @@ flowchart TD
     W["WSL2 使用者：完成 WSL 本体和 /data/workspace"]
     S["完成 Git/SSH 与宿主机集成前置步骤"]
     B["获取 tu-devkit 仓库"]
-    C["进入 ai-dev-env-init"]
+    C["进入 dev-env-init"]
     D["执行 ./install.sh"]
     E["tu 命令是否已在 PATH？"]
     F["执行 export PATH=...<br/>或重新加载 Shell 配置"]

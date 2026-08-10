@@ -9,4 +9,4 @@ flowchart LR
   V --> N["公网出口"]
 ```
 
-开发者本机工具链仍由 `ai-dev-env-init/` 维护；VPS 模块不读取其 Profile，也不由 `tu init` 自动调用。
+开发者本机工具链仍由 `dev-env-init/` 维护；VPS 模块不读取其 Profile，也不由 `tu init` 自动调用。
