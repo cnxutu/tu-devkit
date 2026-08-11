@@ -35,7 +35,8 @@ proxy-groups:
     proxies:
       - DIRECT
       - VPS-SantaClara
-    url: https://api.dingtalk.com
+    # API 根路径可能返回 404，不能作为健康探测地址；使用官网首页判断链路可用性。
+    url: https://www.dingtalk.com
     interval: 300
     timeout: 3000
 
