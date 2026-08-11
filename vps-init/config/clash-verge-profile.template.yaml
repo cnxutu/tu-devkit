@@ -28,6 +28,16 @@ proxy-groups:
     proxies:
       - VPS-SantaClara
       - DIRECT
+  # 钉钉优先使用本地网络；本地 DNS/链路不可用时自动回退到 VPS，
+  # 避免把国内 API 和图片 CDN 固定送到延迟较高的海外节点。
+  - name: 🇨🇳 DingTalk
+    type: fallback
+    proxies:
+      - DIRECT
+      - VPS-SantaClara
+    url: https://api.dingtalk.com
+    interval: 300
+    timeout: 3000
 
 dns:
   enable: true
@@ -131,19 +141,31 @@ dns:
     - localhost.ptlogin2.qq.com
     - '+.msftconnecttest.com'
     - '+.msftncsi.com'
+    # 钉钉桌面端/移动端对 API、长连接和 CDN 的真实地址更兼容，
+    # 避免 Fake-IP 导致证书校验或连接重试。
+    - '+.dingtalk.com'
+    - '+.ddtalk.com'
+    - '+.dingtalkapps.com'
+    - '+.dingtalk.net'
+    - '+.dingtalk.cn'
+    - '+.ddurl.to'
+    - '+.ddimg.cn'
+    - '+.aliyuncs.com'
+    - '+.alicdn.com'
+    - '+.alibabausercontent.com'
 
 rules:
-  # 钉钉登录、消息和图片上传/下载走本地直连，避免被海外 VPS 或境外 CDN 拦截。
-  - DOMAIN-SUFFIX,dingtalk.com,DIRECT
-  - DOMAIN-SUFFIX,ddtalk.com,DIRECT
-  - DOMAIN-SUFFIX,dingtalkapps.com,DIRECT
-  - DOMAIN-SUFFIX,dingtalk.net,DIRECT
-  - DOMAIN-SUFFIX,dingtalk.cn,DIRECT
-  - DOMAIN-SUFFIX,ddurl.to,DIRECT
-  - DOMAIN-SUFFIX,ddimg.cn,DIRECT
-  - DOMAIN-SUFFIX,aliyuncs.com,DIRECT
-  - DOMAIN-SUFFIX,alicdn.com,DIRECT
-  - DOMAIN-SUFFIX,alibabausercontent.com,DIRECT
+  # 钉钉登录、用户信息、消息和图片上传/下载优先本地直连，链路异常时回退 VPS。
+  - DOMAIN-SUFFIX,dingtalk.com,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,ddtalk.com,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,dingtalkapps.com,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,dingtalk.net,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,dingtalk.cn,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,ddurl.to,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,ddimg.cn,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,aliyuncs.com,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,alicdn.com,🇨🇳 DingTalk
+  - DOMAIN-SUFFIX,alibabausercontent.com,🇨🇳 DingTalk
 
   # ChatGPT 页面、登录、静态资源、验证、上传和流式连接必须使用同一代理。
   - DOMAIN-SUFFIX,chatgpt.com,🚀 Proxy
