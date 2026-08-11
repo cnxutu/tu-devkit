@@ -1,172 +1,98 @@
-# VPS 网络环境初始化
+# VPS 初始化
 
-`vps-init` 是 `tu-devkit` 的顶层独立模块：它把一台 Ubuntu 22.04+ VPS 逐步变成可管理的个人网络节点。它不属于 `dev-env-init`，不会被 `tu init` 或 `tu install <profile>` 自动调用。
+`vps-init` 用同一套底层脚本提供两条安装路线：`quick` 用于从 0 到 1 快速验证代理，`secure` 在安装过程中完成常规安全加固。它独立于 `dev-env-init`，不会被 `tu init` 自动调用。
 
-本模块的原则是：**先可用、再可验证、最后加固**。不会把 SSH、VPN、代理和所有安全策略塞进一次不可逆的操作中。
+## 从全新 Ubuntu 开始
 
-## 先理解整个流程
-
-```mermaid
-flowchart TD
-    A["新 Ubuntu VPS<br/>保留控制台与当前 SSH 会话"] --> B["阶段 0：预览<br/>校验配置，不写入"]
-    B --> C["阶段 1：基础可用<br/>工具、UFW、Fail2ban"]
-    C --> D["快速验证<br/>doctor + 保留 SSH 连接"]
-    D --> E["阶段 2：SSH 加固<br/>公钥、禁密码、迁移端口"]
-    E --> F["快速验证<br/>第二终端重新登录"]
-    F --> G["阶段 3：私网接入<br/>WireGuard 与独立设备密钥"]
-    G --> H["阶段 4：可选代理<br/>sing-box + Clash 导入文件"]
-    H --> I["持续检查<br/>doctor、日志与客户端撤销"]
-```
-
-### 为什么不把所有安全设置都前置？
-
-安全不能完全后置：刚拿到 VPS 时就应该减少最明显的风险。但直接禁用 SSH 密码登录、切换端口、启用防火墙和 VPN，若一次失败会让你失去唯一管理入口。
-
-因此采用两层策略：
-
-| 层次 | 何时执行 | 内容 | 目的 |
-| --- | --- | --- | --- |
-| 最低安全底座 | 第一次执行 | 配置校验、管理员公钥前置检查、UFW 最小放行、Fail2ban | 在不切断现有 SSH 的前提下缩小攻击面。 |
-| 高阶加固 | 完成快速验证后 | 禁用密码登录、禁用 root 登录、WireGuard、代理服务和客户端密钥管理 | 逐项改变访问方式；每项都能独立回滚和验证。 |
-
-不要把安全完全延后到 VPS 已长期暴露在公网之后；也不要在没有控制台或第二 SSH 会话时执行 SSH 加固。
-
-## 开始前：三件必须做的事
-
-1. 在供应商控制台确认有可用的 Web/Serial Console，或至少保留当前 SSH 会话不关闭。
-2. 为要继续管理服务器的账户准备 SSH 公钥，并写入对应的 `authorized_keys` 文件。
-3. 从仓库复制配置示例；`vps.local.yaml`、输出客户端配置和秘密文件不会进入 Git。
+仅需先手动安装 Git 和 CA 证书，然后克隆仓库：
 
 ```bash
-cd vps-init
+sudo apt-get update
+sudo apt-get install -y ca-certificates git
+git clone <your-tu-devkit-remote>
+cd tu-devkit/vps-init
 cp config/vps.example.yaml config/vps.local.yaml
 ```
 
-> 不要把私钥、WireGuard 配置、sing-box 密码或真实服务器地址提交到仓库、粘贴到 Issue，或放进聊天记录。
+编辑 `vps.local.yaml`，至少设置：
 
-## 阶段 0：预览计划（零副作用）
+- `server.public_endpoint`：VPS 公网 IP 或域名，供 WireGuard 和 Clash 共用；
+- `ssh.current_port`：供应商当前实际监听的 SSH 端口，通常为 `22`；
+- `ssh.port`：secure 路线最终使用的 SSH 端口；
+- `ssh.admin_authorized_keys_path`：secure 路线使用的非 root 管理员公钥文件；默认安全策略会禁用 root 登录。
 
-```bash
-./install.sh --config config/vps.local.yaml --phase base,firewall --dry-run
-```
+真实端点、密码、私钥、`vps.local.yaml` 和 `output/` 均不得提交到 Git。
 
-它会做什么：读取并校验端口、CIDR、开关与协议组合，展示即将执行的基础阶段。
-
-为什么做：先发现错误端口、冲突配置或不支持的系统，避免在 SSH 会话里边改边猜。
-
-快速验证：命令应只输出 `[DRY-RUN]` 计划，不安装软件、不写入 `/etc`、不重启服务。
-
-## 阶段 1：建立最低安全底座
+## 路线一：Quick
 
 ```bash
-./install.sh --config config/vps.local.yaml --phase base,firewall --yes
+./install.sh --profile quick --config config/vps.local.yaml --dry-run
+./install.sh --profile quick --config config/vps.local.yaml --yes
 ./doctor.sh --config config/vps.local.yaml
 ```
 
-| 内容 | 做什么 | 为什么 | 快速验证 |
-| --- | --- | --- | --- |
-| `base` | 检查 Ubuntu/权限/网络，安装 `curl`、`git`、`ufw`、`fail2ban` 等基础工具 | 使后续阶段具备一致的管理与诊断能力 | 安装日志没有失败包；不会自动重启服务器。 |
-| `firewall` | UFW 默认拒绝入站、允许出站；先放行配置中的 SSH 端口；启用 Fail2ban | 限制公网暴露面，同时保持管理入口 | `doctor.sh` 显示 UFW、SSH 端口与 Fail2ban 状态为 `OK`。 |
+执行顺序为 `base → firewall → sing-box → clash`。它会启用默认拒绝入站的 UFW，只放行当前 SSH TCP 端口和 sing-box TCP 端口，并用 Fail2ban 保护当前 SSH 端口。
 
-此阶段不会修改 SSH 的认证方式。确认原 SSH 会话仍可用后，再进入下一阶段。
+Quick 不修改 sshd 配置、不迁移 SSH 端口、不禁用密码认证、不安装 WireGuard。后续可直接执行 secure 路线升级。
 
-## 阶段 2：SSH 高阶加固（最容易锁定自己的阶段）
+## 路线二：Secure
 
-先在第二个终端使用目标端口和公钥完成一次登录验证。仅当下面三项均满足时执行：
-
-- 管理员公钥已经存在；默认检查 `ssh.admin_authorized_keys_path`。
-- UFW 已放行目标 SSH 端口。
-- 当前会话和第二终端/供应商控制台都可用。
+开始前确认供应商 Web/Serial Console 或恢复入口可用，且管理员公钥已经安装。保留当前 SSH 会话不要关闭。
 
 ```bash
-./install.sh --config config/vps.local.yaml --phase ssh-hardening
-```
-
-它会做什么：备份本模块的 SSH 配置片段，写入候选配置，运行 `sshd -t`，校验成功才重载 SSH；重载失败会恢复该片段。
-
-为什么做：禁用密码和空密码认证可降低暴力破解风险；`disable_root_login` 默认为 `true`，可避免直接 root 登录成为攻击入口。
-
-快速验证：**不要关闭当前会话**。用第二终端重新连接，确认公钥登录成功，再验证密码登录已被拒绝。失败时使用保留的会话或供应商控制台恢复。
-
-## 阶段 3：WireGuard 私有网络
-
-在 `config/vps.local.yaml` 中设置 `wireguard.enabled: true`，并填写实际 `wireguard.endpoint`（供客户端连接的公开 IP 或域名）。
-
-```bash
-./install.sh --config config/vps.local.yaml --phase wireguard --yes
-./wg-add-client.sh iphone
+./install.sh --profile secure --config config/vps.local.yaml --dry-run
+./install.sh --profile secure --config config/vps.local.yaml --yes
 ./doctor.sh --config config/vps.local.yaml
 ```
 
-它会做什么：安装 WireGuard，生成权限受限的服务器密钥，建立 `wg0`、IPv4 转发/NAT 和独立客户端配置。每台设备有独立 key；新增 peer 会持久化，重启后不会丢失。
+Prepare 阶段会：
 
-为什么做：设备可以经加密私网访问 VPS；独立 key 让设备遗失或不再使用时可以单独撤销，不影响其他设备。
+- 同时放行并监听当前/目标 SSH 端口，禁用密码认证和 root 登录；
+- 用 Fail2ban 同时保护两个 SSH 端口；
+- 安装 WireGuard、sing-box，生成 Clash 配置；
+- 写入 `secure-transition` 状态，保留旧 SSH 防火墙规则。
 
-快速验证：导入生成的客户端 `.conf` 后连接，执行 `wg show` 查看 handshake；`doctor.sh` 显示 `WireGuard wg0 active`。撤销设备使用：
-
-```bash
-./wg-remove-client.sh iphone
-```
-
-客户端配置含私钥，只能从受限本地目录导入，不能提交或分享。
-
-## 阶段 4：可选 sing-box 与 Clash
-
-该阶段默认关闭。只有明确需要 Shadowsocks 2022 代理入口时，才设置 `sing_box.enabled: true` 并执行：
+使用第二个终端通过目标端口完成一次密钥登录。确认成功后才能收口：
 
 ```bash
-./install.sh --config config/vps.local.yaml --phase sing-box --yes
-SING_BOX_ENDPOINT='你的公开域名或IP' ./scripts/generate-clash-profile.sh
-```
-
-它会做什么：从已配置的 apt 源安装 `sing-box`，生成随机密码并写入权限受限的运行配置；确认配置有效后启用服务，并以 [`config/clash-verge-profile.template.yaml`](config/clash-verge-profile.template.yaml) 为唯一模板生成权限为 `600` 的完整 Clash YAML。生成结果包含 DNS、私网直连、国内分流、开发服务、ChatGPT 和常用娱乐服务规则，不再维护一份容易漂移的极简配置。
-
-为什么做：这是额外公网暴露面，不应作为基础阶段的隐式默认行为；分开执行可让你先确认 WireGuard/SSH 管理路径正常。
-
-当前生成的 Shadowsocks 2022 节点只开放 TCP，不开放 UDP。Clash 配置会在所有业务规则之前明确拒绝 UDP/443，使浏览器的 QUIC 请求立即失败并回落到 HTTP/2/TCP，避免请求继续匹配不支持 UDP 的节点后等待超时。该策略以稳定性为先，不提供 HTTP/3。
-
-Shadowsocks 2022 密钥长度必须与方法一致：`2022-blake3-aes-128-gcm` 使用 16 字节，`2022-blake3-aes-256-gcm` 使用 32 字节。新部署会调用 `sing-box generate rand --base64` 按方法生成密钥；已有秘密文件长度不正确时脚本会停止并要求将服务端与全部客户端一起轮换，不会静默替换导致客户端集体断线。
-
-仓库中的模板和生成器更新不会覆盖 Clash Verge 中已经导入的配置。升级后必须重新运行 `generate-clash-profile.sh` 并重新导入生成的 YAML，或将模板中的 UDP/443 拒绝规则同步到现有配置，然后在 Clash Verge 中重新加载配置。不要把包含真实端点和密码的配置提交到仓库或粘贴到聊天记录。
-
-完整模板针对“开发代理为主、娱乐为辅”的单节点场景采用以下边界：
-
-- `mixed-port` 与 DNS 只供本机使用，私网、容器网段、`.lan`/`.local` 和 Windows 连通性检查始终直连。
-- 国内 DNS 优先返回本地 CDN，国内 IP 直连；ChatGPT、代码托管、包仓库和云平台显式走 `🚀 Proxy`，其余非国内流量由 VPS 兜底。模板不依赖需要额外下载的 `GeoSite.dat`，降低首次导入失败概率。视频、音乐、直播和 Steam 社区默认走 `🎬 Entertainment`，可在 Clash Verge 中单独切回 `DIRECT`；Steam 下载 CDN 不强制绕行 VPS。
-- 国内 DoH 负责普通与代理节点域名解析，境外 DoH 按规则经 VPS 查询；缓存策略与 Fake-IP 映射持久化用于降低重启后的解析抖动。
-- 单个 TCP-only 节点只提供选路和健康观测，不承诺游戏 UDP、HTTP/3、流媒体解锁或线路加速；这些能力需要额外节点或不同传输协议。
-
-快速验证：`doctor.sh` 显示 sing-box active，客户端导入生成 YAML 后验证连通性。密码不会回显，遗失时应通过受控本地秘密文件轮换，而不是从日志中找回。
-
-## 持续检查、日志与恢复
-
-```bash
+./install.sh --profile secure --finalize --verified-ssh --config config/vps.local.yaml --yes
 ./doctor.sh --config config/vps.local.yaml
 ```
 
-`doctor.sh` 只读检查 UFW、Fail2ban、SSH 端口和已启用服务；启用 sing-box 时还会验证运行配置、TCP 防火墙规则和 Shadowsocks 2022 密钥长度。非 dry-run 的执行日志会写入 `/var/log/tu-devkit-vps-init/`；分享前必须人工复核与脱敏。
+`--yes` 不能替代 `--verified-ssh`。Finalize 只保留目标 SSH 配置，Fail2ban 切到目标端口，并且只删除状态中记录、由本模块创建的旧端口过渡规则。用户已有 UFW 规则不会被删除。若当前端口与目标端口相同，prepare 会直接形成 `secure` 状态，无需 finalize。
 
-SSH 阶段的备份位于 `/var/lib/tu-devkit-vps-init/backups/ssh/`。若发生意外，优先使用仍保持连接的会话或供应商控制台处理，**不要**在无法访问服务器时继续叠加执行新的网络变更。
+## 状态与诊断
 
-## 配置参考
+状态、模块拥有的 UFW 规则、备份和已安装 sing-box 版本保存在 `/var/lib/tu-devkit-vps-init/`，采用原子写入。日志位于 `/var/log/tu-devkit-vps-init/`，分享前需脱敏。
 
-从 [`config/vps.example.yaml`](config/vps.example.yaml) 开始。常用项如下：
+`doctor.sh` 默认读取状态，也可显式检查：
 
-| 配置项 | 默认值 | 说明 |
-| --- | --- | --- |
-| `ssh.port` | `22222` | SSH 管理端口；必须先经 UFW 放行。 |
-| `ssh.disable_root_login` | `true` | 是否完全禁用 root 登录。 |
-| `wireguard.enabled` | `false` | 显式启用 WireGuard。 |
-| `wireguard.port` | `60273` | WireGuard UDP 监听端口。 |
-| `wireguard.ipv4_cidr` | `10.66.66.0/24` | 私网地址池；如与已有网络冲突必须改动。 |
-| `sing_box.enabled` | `false` | 显式启用 sing-box。 |
-| `sing_box.port` | `8080` | sing-box TCP 监听端口。 |
+```bash
+./doctor.sh --profile quick --config config/vps.local.yaml
+./doctor.sh --profile secure-transition --config config/vps.local.yaml
+./doctor.sh --profile secure --config config/vps.local.yaml
+```
+
+过渡状态会输出下一条 finalize 命令。SSH、Fail2ban 和 sing-box 配置均先备份、再校验；校验失败会恢复模块管理的上一版本。SSH 异常时优先使用仍保持连接的会话或供应商控制台恢复，不要继续叠加网络变更。
+
+## 安装源与兼容入口
+
+脚本从 sing-box 官方 SagerNet APT stable 仓库安装，固定校验官方 GPG 指纹 `2C317FBD5D886B4E89BAE8DA6D9152172A2B2F0C`，不执行 pipe-to-shell 安装器。
+
+高级用户仍可使用 `--phase`。该模式继续遵循 `wireguard.enabled` 和 `sing_box.enabled`；Profile 模式的能力由 Profile 固定，不依赖这两个旧开关。`SING_BOX_ENDPOINT` 和旧 `wireguard.endpoint` 仍是兼容回退，新配置统一使用 `server.public_endpoint`。`--profile` 与 `--phase` 互斥；不指定其中任何一个时只显示帮助，不修改服务器。
+
+## Clash TCP-only 说明
+
+当前 Shadowsocks 2022 节点只提供 TCP，节点配置保持 `udp: false`，服务端和 UFW 不开放 sing-box UDP。Clash 模板在业务规则之前拒绝 UDP/443，使浏览器的 QUIC 尝试立即失败并快速回落到 HTTP/2/TCP。
+
+生成文件位于 `output/vps-clash.yaml`，权限为 `600`。仓库模板更新不会自动覆盖 Clash Verge 已导入的配置，必须重新运行安装/生成脚本并在 Clash Verge 中重新导入或重载。
 
 ## 开发验证
 
 ```bash
 bash vps-init/tests/run.sh
-bash -n vps-init/install.sh vps-init/doctor.sh vps-init/wg-add-client.sh vps-init/wg-remove-client.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
+bash -n vps-init/*.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
+shellcheck vps-init/*.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
 ```
 
-真实公网 VPS 的 SSH/UFW/WireGuard/sing-box 验收必须在一次性测试主机完成；本仓库的自动化测试不替代该验证。
+真实 VPS 仍需分别验证 quick、secure、quick→secure，云厂商安全组、DNS、TLS 证书和 VPS 采购不由脚本修改。

@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091 # Module paths are resolved from this script at runtime.
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/lib/common.sh"; source "$ROOT/lib/config.sh"
@@ -8,7 +9,7 @@ client_dir="${VPS_INIT_STATE_DIR}/clients"; ensure_private_dir "$client_dir"; [[
 if [[ "$VPS_INIT_DRY_RUN" == 1 ]]; then info "[DRY-RUN] create WireGuard client $alias_name"; exit 0; fi
 umask 077; private="$(wg genkey)"; public="$(printf '%s' "$private" | wg pubkey)"; server_public="$(< /etc/wireguard/server_public.key)"
 cidr="$(config_value wireguard ipv4_cidr)"; prefix="${cidr%.*}"; index=$(( $(find "$client_dir" -name '*.conf' -type f | wc -l) + 2 )); address="${prefix}.${index}/${cidr#*/}"
-endpoint="$(config_value wireguard endpoint)"; [[ -n "$endpoint" ]] || die 'wireguard.endpoint must be set before creating a client.'
+endpoint="$(public_endpoint)"; [[ -n "$endpoint" ]] || die 'server.public_endpoint must be set before creating a client.'
 cat > "$client_dir/$alias_name.conf" <<EOF
 [Interface]
 PrivateKey = ${private}

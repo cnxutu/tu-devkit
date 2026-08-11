@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-VPS_INIT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VPS_INIT_STATE_DIR="${VPS_INIT_STATE_DIR:-/var/lib/tu-devkit-vps-init}"
 VPS_INIT_LOG_DIR="${VPS_INIT_LOG_DIR:-/var/log/tu-devkit-vps-init}"
 VPS_INIT_DRY_RUN="${VPS_INIT_DRY_RUN:-0}"

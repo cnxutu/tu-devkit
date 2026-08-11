@@ -4,7 +4,7 @@
 
 为 `tu-devkit` 新增顶层 `vps-init/` 模块，面向新购的 Ubuntu VPS 提供可审查、可重复执行的个人基础设施初始化能力：系统基础工具、安全基线、防火墙、WireGuard、可选的 sing-box 代理与客户端导入文件。
 
-本文描述**目标设计**，不是当前实现说明；该目录及功能在本文创建时均为 `pending_implementation`。实际安装命令、支持版本、第三方组件版本和网络行为必须以实现、测试与发布说明为准。
+本文记录已实现的目标契约；具体操作仍以模块 README、实现与测试为准。
 
 ## 2. 范围、前提与非目标
 
@@ -31,7 +31,7 @@
 ```text
 vps-init/
 ├── README.md
-├── install.sh                 # 编排入口；默认仅执行安全的基础阶段
+├── install.sh                 # quick/secure Profile 与高级 phase 编排入口
 ├── doctor.sh                  # 只读健康检查
 ├── config/vps.example.yaml    # 可提交的脱敏示例
 ├── scripts/
@@ -55,20 +55,21 @@ vps-init/
 推荐命令契约：
 
 ```bash
-# 预览：不安装软件、不改配置、不重启服务、不生成密钥
-./install.sh --config ./config/vps.local.yaml --dry-run
+# 快速验证：不改变 SSH 行为、不安装 WireGuard
+./install.sh --profile quick --config ./config/vps.local.yaml
 
-# 基础系统、安全基线与防火墙（需要明确确认）
-./install.sh --config ./config/vps.local.yaml --phase base,security,firewall
+# 安装并进入双 SSH 端口的安全过渡状态
+./install.sh --profile secure --config ./config/vps.local.yaml
 
-# 仅在管理员确认备用 SSH 登录路径已验证后启用 SSH 加固
-./install.sh --config ./config/vps.local.yaml --phase ssh-hardening
+# 仅在新端口密钥登录已验证后收口
+./install.sh --profile secure --finalize --verified-ssh --config ./config/vps.local.yaml
 
-# 可选能力，默认不执行
-./install.sh --config ./config/vps.local.yaml --phase wireguard
-./install.sh --config ./config/vps.local.yaml --phase sing-box,clash
+# 高级兼容入口
+./install.sh --phase base,firewall --config ./config/vps.local.yaml
 ./doctor.sh --config ./config/vps.local.yaml
 ```
+
+`--profile` 与 `--phase` 互斥，均未指定时只显示帮助且不得修改服务器。Profile 固定能力集合；旧 `wireguard.enabled`、`sing_box.enabled` 仅控制高级 phase 模式。
 
 `vps.example.yaml` 只能包含端口、开关、网段、客户端别名等非敏感参数。实际配置 `vps.local.yaml`、`.env`、生成的客户端配置、日志与备份目录必须被 `.gitignore` 覆盖。
 
@@ -82,14 +83,15 @@ vps-init/
 | FR-04 | 配置校验必须在变更前完成，拒绝非法端口、重复端口、无效 CIDR、未知阶段和不支持的协议组合。 | 无效配置返回非零并指出配置键与修复方式。 |
 | FR-05 | 每个阶段提供明确的成功、跳过、失败和人工操作提示；失败返回非零且不继续依赖它的后续阶段。 | 故意使软件源不可用时，显示失败原因与重试/修复建议。 |
 | FR-06 | 所有下载源、软件包和外部安装器必须在文档中声明；外部脚本不得以无版本、无校验的方式直接以 root 执行。 | 依赖版本/来源可审查；测试覆盖下载失败与校验失败。 |
-| FR-07 | 支持 `--yes` 才可在非交互模式执行变更；涉及 SSH 入站规则、密钥删除、服务重启或覆盖配置时，默认要求显式确认。 | 无 `--yes` 的非交互执行失败并给出命令提示。 |
+| FR-07 | 支持 `--yes` 非交互确认；secure finalize 还必须显式传入 `--verified-ssh`，两者不可互相替代。 | 缺少 SSH 验证标志时拒绝收口。 |
+| FR-08 | 原子记录 `quick`、`secure-transition`、`secure` 状态及模块创建的 UFW 规则。 | doctor 默认按状态验收，且 finalize 只删除被记录的模块规则。 |
 
 ## 5. 分阶段功能需求
 
 ### 5.1 基础初始化
 
 - 检查 Ubuntu 版本、权限、DNS/软件源连通性、默认路由和可用公网地址；公网地址仅作为诊断输出，无法获取时允许继续执行不依赖它的阶段。
-- 安装或确认 `curl`、`wget`、`vim`、`git`、`htop`、`net-tools`、`unzip`、`ufw`、`fail2ban`、`jq` 与必要 CA 证书。
+- 全新主机由管理员先手动安装 `git` 与 CA 证书并克隆仓库；脚本安装或确认 `curl`、`gnupg`、`wget`、`vim`、`git`、`htop`、`net-tools`、`unzip`、`ufw`、`fail2ban`、`jq`。
 - 使用 apt 的非交互安全更新策略；不得无提示进行发行版升级或重启服务器。
 - 输出已安装/已存在/失败包清单，以及需要人工处理的重启提示。
 
@@ -105,7 +107,7 @@ vps-init/
 ### 5.3 防火墙与 Fail2ban
 
 - UFW 默认策略为拒绝入站、允许出站；启用前必须放行经确认的 SSH 管理端口。
-- WireGuard UDP 端口和 sing-box 入站端口仅在相应功能启用时放行；配置缺失时不得使用文档示例端口作为隐式默认暴露。
+- Quick 固定放行当前 SSH TCP 与 sing-box TCP；Secure 固定增加 WireGuard UDP，并在过渡期同时放行当前/目标 SSH。高级 phase 模式继续按旧功能开关处理。
 - 防火墙规则必须带可识别注释或可追踪清单，重复执行不产生重复规则；不得清空用户已有的无关规则。
 - 配置并启用 fail2ban 的 SSH 防护；保留管理员可配置的 `bantime`、`findtime` 与 `maxretry`，且变更前备份现有本地配置。
 - `doctor.sh` 必须报告 UFW 状态、预期端口、实际规则与 fail2ban 服务状态，不展示来源 IP 的完整敏感日志。
@@ -122,7 +124,8 @@ vps-init/
 
 ### 5.5 sing-box 与 Clash 导出
 
-- sing-box 为可选阶段，默认关闭。默认仅支持经过明确审查的 Shadowsocks 2022 入站；协议、端口、加密方法与监听地址必须可配置。
+- Profile 路线固定安装 sing-box；高级 phase 模式仍可通过旧开关关闭。仅支持经过明确审查的 Shadowsocks 2022 TCP 入站。
+- 使用官方 SagerNet APT stable 仓库，下载公钥后固定核对官方指纹，禁止执行未经校验的 pipe-to-shell 安装器，并记录实际安装版本。
 - 监听 `0.0.0.0` 或公网端口需要显式确认，并与 UFW 放行规则原子协调；服务配置通过 sing-box 自身校验后才能重启。
 - 密码必须由安全随机源生成或由受控本地秘密文件提供；只写入权限受限的运行配置和本地客户端输出，不回显、不提交。
 - 生成兼容 Clash Verge Rev 的单一 YAML 配置，其中节点名称来自非敏感配置，例如 `VPS-SantaClara`。生成前检查端点地址、端口、方法和密码来源；输出文件权限为仅所有者可读。
@@ -132,9 +135,16 @@ vps-init/
 
 ```yaml
 # config/vps.example.yaml：仅示例，不含密码、私钥或真实主机地址
+server:
+  public_endpoint: ""
 ssh:
+  current_port: 22
   port: 22222
   disable_root_login: true
+fail2ban:
+  bantime: 1h
+  findtime: 10m
+  maxretry: 5
 wireguard:
   enabled: false
   port: 60273
@@ -181,6 +191,6 @@ sing_box:
 ## 9. 待核实项
 
 - `vps-init/install.sh` 是本期唯一入口；是否在未来引入显式 `tu vps ...` 子命令：`pending_decision`。
-- sing-box 官方安装与 systemd 单元的稳定安装方式、支持版本和校验策略：`pending_verification`。
+- sing-box 使用官方 SagerNet APT stable 仓库，并校验固定官方 GPG 指纹；真实 VPS 软件源可用性仍需端到端验证。
 - WireGuard IPv6 支持、DNS 策略、全隧道/分流默认值和客户端兼容矩阵：`pending_decision`。
 - 真实 VPS 供应商选择、区域和资源规格属于采购决策，不构成本模块功能需求或默认配置。

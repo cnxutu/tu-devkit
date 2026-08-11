@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091 # Module paths are resolved from this script at runtime.
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/lib/common.sh"; source "$ROOT/lib/config.sh"
 CONFIG_FILE="${CONFIG_FILE:-$ROOT/config/vps.local.yaml}"; validate_config
 if [[ "$VPS_INIT_DRY_RUN" == 1 ]]; then info '[DRY-RUN] create protected Clash profile'; exit 0; fi
-endpoint="${SING_BOX_ENDPOINT:-}"; [[ -n "$endpoint" ]] || die 'Set SING_BOX_ENDPOINT to the server hostname or public IP.'
-[[ "$endpoint" =~ ^[a-zA-Z0-9._:-]+$ ]] || die 'SING_BOX_ENDPOINT contains unsupported characters.'
+endpoint="$(public_endpoint)"; [[ -n "$endpoint" ]] || die 'Set server.public_endpoint (or SING_BOX_ENDPOINT) to the server hostname or public IP.'
+[[ "$endpoint" =~ ^[a-zA-Z0-9._:-]+$ ]] || die 'The public endpoint contains unsupported characters.'
 password_file="${SING_BOX_PASSWORD_FILE:-${VPS_INIT_STATE_DIR}/secrets/sing-box-password}"; [[ -s "$password_file" ]] || die 'sing-box password file is missing.'
 password="$(< "$password_file")"
 template="$ROOT/config/clash-verge-profile.template.yaml"; [[ -f "$template" ]] || die 'Clash profile template is missing.'

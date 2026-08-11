@@ -1,8 +1,15 @@
 # Copy to vps.local.yaml. Do not store passwords, private keys, or real endpoints here.
+server:
+  public_endpoint: ""
 ssh:
+  current_port: 22
   port: 22222
   disable_root_login: true
-  admin_authorized_keys_path: /root/.ssh/authorized_keys
+  admin_authorized_keys_path: /home/admin/.ssh/authorized_keys
+fail2ban:
+  bantime: 1h
+  findtime: 10m
+  maxretry: 5
 wireguard:
   enabled: false
   port: 60273

@@ -1,14 +1,24 @@
 # VPS 初始化教程
 
-在 Ubuntu 22.04+ 的一次性测试 VPS 中，使用 root 或可无交互 sudo 的账号执行。先确认供应商控制台可用，并保留当前 SSH 会话。
+全新 Ubuntu 只需先安装 `ca-certificates` 和 `git`，克隆仓库并复制 `vps-init/config/vps.example.yaml`。详细配置与恢复方式见 [`vps-init/README.md`](../../vps-init/README.md)。
+
+快速验证路线：
 
 ```bash
-git clone <your-tu-devkit-remote>
 cd tu-devkit/vps-init
-cp config/vps.example.yaml config/vps.local.yaml
-./install.sh --config config/vps.local.yaml --phase base,firewall --dry-run
-./install.sh --config config/vps.local.yaml --phase base,firewall --yes
+./install.sh --profile quick --config config/vps.local.yaml --dry-run
+./install.sh --profile quick --config config/vps.local.yaml --yes
 ./doctor.sh --config config/vps.local.yaml
 ```
 
-编辑 `vps.local.yaml` 后，再分别执行 SSH、WireGuard 和 sing-box 阶段。每次 SSH 变更前，先在第二个终端验证目标端口与管理员公钥；任何失败都应保留当前会话并通过控制台或备份恢复。客户端配置仅从受限输出目录导入，不能提交或通过聊天工具发送。
+安装即加固路线：
+
+```bash
+./install.sh --profile secure --config config/vps.local.yaml --dry-run
+./install.sh --profile secure --config config/vps.local.yaml --yes
+# 在第二终端验证目标端口的密钥登录后：
+./install.sh --profile secure --finalize --verified-ssh --config config/vps.local.yaml --yes
+./doctor.sh --config config/vps.local.yaml
+```
+
+执行 secure 前必须具备供应商控制台/恢复入口并保留当前 SSH 会话。Quick 可以随时按 secure 命令原地升级。

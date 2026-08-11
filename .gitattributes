@@ -1,0 +1,2 @@
+vps-init/*.sh text eol=lf
+vps-init/**/*.sh text eol=lf
