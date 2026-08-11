@@ -119,13 +119,22 @@ cp config/vps.example.yaml config/vps.local.yaml
 SING_BOX_ENDPOINT='你的公开域名或IP' ./scripts/generate-clash-profile.sh
 ```
 
-它会做什么：从已配置的 apt 源安装 `sing-box`，生成随机密码并写入权限受限的运行配置；确认配置有效后启用服务，并生成受限权限的 Clash YAML。
+它会做什么：从已配置的 apt 源安装 `sing-box`，生成随机密码并写入权限受限的运行配置；确认配置有效后启用服务，并以 [`config/clash-verge-profile.template.yaml`](config/clash-verge-profile.template.yaml) 为唯一模板生成权限为 `600` 的完整 Clash YAML。生成结果包含 DNS、私网直连、国内分流、开发服务、ChatGPT 和常用娱乐服务规则，不再维护一份容易漂移的极简配置。
 
 为什么做：这是额外公网暴露面，不应作为基础阶段的隐式默认行为；分开执行可让你先确认 WireGuard/SSH 管理路径正常。
 
 当前生成的 Shadowsocks 2022 节点只开放 TCP，不开放 UDP。Clash 配置会在所有业务规则之前明确拒绝 UDP/443，使浏览器的 QUIC 请求立即失败并回落到 HTTP/2/TCP，避免请求继续匹配不支持 UDP 的节点后等待超时。该策略以稳定性为先，不提供 HTTP/3。
 
+Shadowsocks 2022 密钥长度必须与方法一致：`2022-blake3-aes-128-gcm` 使用 16 字节，`2022-blake3-aes-256-gcm` 使用 32 字节。新部署会调用 `sing-box generate rand --base64` 按方法生成密钥；已有秘密文件长度不正确时脚本会停止并要求将服务端与全部客户端一起轮换，不会静默替换导致客户端集体断线。
+
 仓库中的模板和生成器更新不会覆盖 Clash Verge 中已经导入的配置。升级后必须重新运行 `generate-clash-profile.sh` 并重新导入生成的 YAML，或将模板中的 UDP/443 拒绝规则同步到现有配置，然后在 Clash Verge 中重新加载配置。不要把包含真实端点和密码的配置提交到仓库或粘贴到聊天记录。
+
+完整模板针对“开发代理为主、娱乐为辅”的单节点场景采用以下边界：
+
+- `mixed-port` 与 DNS 只供本机使用，私网、容器网段、`.lan`/`.local` 和 Windows 连通性检查始终直连。
+- 国内 DNS 优先返回本地 CDN，国内 IP 直连；ChatGPT、代码托管、包仓库和云平台显式走 `🚀 Proxy`，其余非国内流量由 VPS 兜底。模板不依赖需要额外下载的 `GeoSite.dat`，降低首次导入失败概率。视频、音乐、直播和 Steam 社区默认走 `🎬 Entertainment`，可在 Clash Verge 中单独切回 `DIRECT`；Steam 下载 CDN 不强制绕行 VPS。
+- 国内 DoH 负责普通与代理节点域名解析，境外 DoH 按规则经 VPS 查询；缓存策略与 Fake-IP 映射持久化用于降低重启后的解析抖动。
+- 单个 TCP-only 节点只提供选路和健康观测，不承诺游戏 UDP、HTTP/3、流媒体解锁或线路加速；这些能力需要额外节点或不同传输协议。
 
 快速验证：`doctor.sh` 显示 sing-box active，客户端导入生成 YAML 后验证连通性。密码不会回显，遗失时应通过受控本地秘密文件轮换，而不是从日志中找回。
 
@@ -135,7 +144,7 @@ SING_BOX_ENDPOINT='你的公开域名或IP' ./scripts/generate-clash-profile.sh
 ./doctor.sh --config config/vps.local.yaml
 ```
 
-`doctor.sh` 只读检查 UFW、Fail2ban、SSH 端口和已启用服务。非 dry-run 的执行日志会写入 `/var/log/tu-devkit-vps-init/`；分享前必须人工复核与脱敏。
+`doctor.sh` 只读检查 UFW、Fail2ban、SSH 端口和已启用服务；启用 sing-box 时还会验证运行配置、TCP 防火墙规则和 Shadowsocks 2022 密钥长度。非 dry-run 的执行日志会写入 `/var/log/tu-devkit-vps-init/`；分享前必须人工复核与脱敏。
 
 SSH 阶段的备份位于 `/var/lib/tu-devkit-vps-init/backups/ssh/`。若发生意外，优先使用仍保持连接的会话或供应商控制台处理，**不要**在无法访问服务器时继续叠加执行新的网络变更。
 

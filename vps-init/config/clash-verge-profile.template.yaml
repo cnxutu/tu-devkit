@@ -5,23 +5,42 @@ mixed-port: 7890
 allow-lan: false
 mode: rule
 log-level: info
+ipv6: false
 unified-delay: true
 tcp-concurrent: true
 keep-alive-interval: 30
+
+profile:
+  # 保留策略组选择与 Fake-IP 映射，减少 Clash 重启后的重复解析和连接抖动。
+  store-selected: true
+  store-fake-ip: true
 
 proxies:
   # vps-init/scripts/generate-clash-profile.sh 生成的是 Shadowsocks 2022 节点。
   - name: "VPS-SantaClara"
     type: ss
-    server: your.server.example
+    server: "your.server.example"
     port: 8080
     cipher: 2022-blake3-aes-128-gcm
     password: "CHANGE_ME"
+    # 当前 VPS 部署只承诺 IPv4，避免代理节点域名的无效 IPv6 尝试。
+    ip-version: ipv4
     # 服务端仅开放 TCP；显式关闭节点 UDP，避免产生不可用的 QUIC 尝试。
     udp: false
 
 proxy-groups:
   - name: 🚀 Proxy
+    type: select
+    proxies:
+      - VPS-SantaClara
+      - DIRECT
+    # select 组不会自动切换节点，但定期探测可在 Clash Verge 中持续展示链路健康度。
+    url: https://cp.cloudflare.com
+    interval: 300
+    lazy: true
+    timeout: 5000
+  # 娱乐流量默认保持境外出口，也允许在 Clash Verge 中单独切回本地网络。
+  - name: 🎬 Entertainment
     type: select
     proxies:
       - VPS-SantaClara
@@ -37,24 +56,33 @@ proxy-groups:
     url: https://www.dingtalk.com
     interval: 300
     timeout: 3000
+    expected-status: 200-399
 
 dns:
   enable: true
-  listen: 0.0.0.0:1053
+  # 仅供本机 Mihomo/TUN 使用，避免把 DNS 服务暴露到局域网接口。
+  listen: 127.0.0.1:1053
   ipv6: false
+  cache-algorithm: arc
+  prefer-h3: false
+  respect-rules: true
+  default-nameserver:
+    # 仅用于解析 DoH 服务器域名，必须是 IP 地址并能从本地网络直达。
+    - 223.5.5.5
+    - 119.29.29.29
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
   # 代理节点地址本身必须用直连 DNS 解析，避免形成 DNS 依赖环。
   proxy-server-nameserver:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
-  nameserver:
-    - https://1.1.1.1/dns-query
-    - https://8.8.8.8/dns-query
     - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
+  nameserver:
+    - https://dns.alidns.com/dns-query
+    - https://doh.pub/dns-query
   fallback:
-    - https://cloudflare-dns.com/dns-query
-    - https://dns.google/dns-query
+    # respect-rules 会让这些境外 DoH 请求经 VPS 发出；使用 IP 可避免启动解析依赖。
+    - https://1.1.1.1/dns-query
+    - https://8.8.8.8/dns-query
   fallback-filter:
     geoip: true
     geoip-code: CN
@@ -135,6 +163,7 @@ dns:
       - https://1.1.1.1/dns-query
       - https://8.8.8.8/dns-query
   fake-ip-filter:
+    - localhost
     - '*.lan'
     - '*.local'
     - localhost.ptlogin2.qq.com
@@ -154,6 +183,21 @@ dns:
     - '+.alibabausercontent.com'
 
 rules:
+  # 私网和系统连通性检查必须先于代理及 QUIC 规则，避免开发环境、容器和局域网服务绕行 VPS。
+  - DOMAIN,localhost,DIRECT
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT
+  - DOMAIN-SUFFIX,msftncsi.com,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
+
   # 当前 VPS 节点仅支持 TCP。明确拒绝 QUIC 使用的 UDP/443，让客户端立即回落到 HTTP/2/TCP，
   # 避免 UDP 请求命中不支持 UDP 的节点后继续匹配并等待超时。
   - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'
@@ -203,6 +247,8 @@ rules:
 
   # 其他海外服务
   - DOMAIN-SUFFIX,github.com,🚀 Proxy
+  - DOMAIN-SUFFIX,githubassets.com,🚀 Proxy
+  - DOMAIN-SUFFIX,github.io,🚀 Proxy
   - DOMAIN-SUFFIX,githubusercontent.com,🚀 Proxy
   - DOMAIN-SUFFIX,google.com,🚀 Proxy
   - DOMAIN-SUFFIX,googleapis.com,🚀 Proxy
@@ -221,6 +267,7 @@ rules:
 
   # 开发与基础设施
   - DOMAIN-SUFFIX,gitlab.com,🚀 Proxy
+  - DOMAIN-SUFFIX,gitlab-static.net,🚀 Proxy
   - DOMAIN-SUFFIX,bitbucket.org,🚀 Proxy
   - DOMAIN-SUFFIX,maven.org,🚀 Proxy
   - DOMAIN-SUFFIX,maven.apache.org,🚀 Proxy
@@ -230,17 +277,39 @@ rules:
   - DOMAIN-SUFFIX,gradle.com,🚀 Proxy
   - DOMAIN-SUFFIX,plugins.gradle.org,🚀 Proxy
   - DOMAIN-SUFFIX,apache.org,🚀 Proxy
+  - DOMAIN-SUFFIX,sonatype.org,🚀 Proxy
   - DOMAIN-SUFFIX,docker.com,🚀 Proxy
   - DOMAIN-SUFFIX,docker.io,🚀 Proxy
   - DOMAIN-SUFFIX,hub.docker.com,🚀 Proxy
   - DOMAIN-SUFFIX,registry-1.docker.io,🚀 Proxy
   - DOMAIN-SUFFIX,nodejs.org,🚀 Proxy
   - DOMAIN-SUFFIX,npmjs.com,🚀 Proxy
+  - DOMAIN-SUFFIX,npmjs.org,🚀 Proxy
   - DOMAIN-SUFFIX,yarnpkg.com,🚀 Proxy
   - DOMAIN-SUFFIX,unpkg.com,🚀 Proxy
   - DOMAIN-SUFFIX,jsdelivr.com,🚀 Proxy
   - DOMAIN-SUFFIX,pypi.org,🚀 Proxy
   - DOMAIN-SUFFIX,python.org,🚀 Proxy
+  - DOMAIN-SUFFIX,pythonhosted.org,🚀 Proxy
+  - DOMAIN-SUFFIX,rust-lang.org,🚀 Proxy
+  - DOMAIN-SUFFIX,rustup.rs,🚀 Proxy
+  - DOMAIN-SUFFIX,crates.io,🚀 Proxy
+  - DOMAIN-SUFFIX,go.dev,🚀 Proxy
+  - DOMAIN-SUFFIX,golang.org,🚀 Proxy
+  - DOMAIN-SUFFIX,nuget.org,🚀 Proxy
+  - DOMAIN-SUFFIX,jetbrains.com,🚀 Proxy
+  - DOMAIN-SUFFIX,jetbrains.ai,🚀 Proxy
+  - DOMAIN-SUFFIX,vscode.dev,🚀 Proxy
+  - DOMAIN-SUFFIX,vscode-unpkg.net,🚀 Proxy
+  - DOMAIN-SUFFIX,visualstudio.com,🚀 Proxy
+  - DOMAIN-SUFFIX,vsassets.io,🚀 Proxy
+  - DOMAIN-SUFFIX,microsoftonline.com,🚀 Proxy
+  - DOMAIN-SUFFIX,azure.com,🚀 Proxy
+  - DOMAIN-SUFFIX,windows.net,🚀 Proxy
+  - DOMAIN-SUFFIX,k8s.io,🚀 Proxy
+  - DOMAIN-SUFFIX,kubernetes.io,🚀 Proxy
+  - DOMAIN-SUFFIX,helm.sh,🚀 Proxy
+  - DOMAIN-SUFFIX,amazonaws.com,🚀 Proxy
   - DOMAIN-SUFFIX,stackoverflow.com,🚀 Proxy
   - DOMAIN-SUFFIX,stackexchange.com,🚀 Proxy
   - DOMAIN-SUFFIX,medium.com,🚀 Proxy
@@ -254,5 +323,24 @@ rules:
   - DOMAIN-SUFFIX,apple.com,🚀 Proxy
   - DOMAIN-SUFFIX,microsoft.com,🚀 Proxy
   - DOMAIN-SUFFIX,office.com,🚀 Proxy
+
+  # 常用视频、音乐、直播和游戏平台；单节点不做地区自动切换，统一经 VPS 保持出口一致。
+  - DOMAIN-SUFFIX,youtube.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,youtu.be,🎬 Entertainment
+  - DOMAIN-SUFFIX,ytimg.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,googlevideo.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,netflix.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,nflxvideo.net,🎬 Entertainment
+  - DOMAIN-SUFFIX,nflximg.net,🎬 Entertainment
+  - DOMAIN-SUFFIX,nflxso.net,🎬 Entertainment
+  - DOMAIN-SUFFIX,spotify.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,scdn.co,🎬 Entertainment
+  - DOMAIN-SUFFIX,twitch.tv,🎬 Entertainment
+  - DOMAIN-SUFFIX,twitchcdn.net,🎬 Entertainment
+  - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainment
+  - DOMAIN-SUFFIX,steampowered.com,🎬 Entertainment
+
+  # 显式代理规则优先；其余国内 IP 直连，最后才由 VPS 兜底。
+  # 不依赖 GeoSite.dat，避免首次导入时因数据文件下载失败而拒绝加载配置。
   - 'GEOIP,CN,DIRECT'
   - 'MATCH,🚀 Proxy'

@@ -22,6 +22,20 @@ is_cidr_v4() {
   local address="${1%/*}" octet
   for octet in ${address//./ }; do (( 10#$octet <= 255 )) || return 1; done
 }
+shadowsocks_key_length() {
+  case "$1" in
+    2022-blake3-aes-128-gcm) printf '16\n';;
+    2022-blake3-aes-256-gcm) printf '32\n';;
+    *) return 1;;
+  esac
+}
+is_base64_key_length() {
+  local value="$1" expected="$2" decoded_length
+  [[ "$value" =~ ^[a-zA-Z0-9+/]+={0,2}$ ]] || return 1
+  decoded_length="$(printf '%s' "$value" | base64 -d 2>/dev/null | wc -c)" || return 1
+  decoded_length="${decoded_length//[[:space:]]/}"
+  [[ "$decoded_length" == "$expected" ]]
+}
 validate_config() {
   [[ -f "$CONFIG_FILE" ]] || die "Config file not found: $CONFIG_FILE"
   local ssh_port wg_port sb_port cidr listen outbound method
