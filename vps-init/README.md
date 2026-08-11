@@ -123,6 +123,10 @@ SING_BOX_ENDPOINT='你的公开域名或IP' ./scripts/generate-clash-profile.sh
 
 为什么做：这是额外公网暴露面，不应作为基础阶段的隐式默认行为；分开执行可让你先确认 WireGuard/SSH 管理路径正常。
 
+当前生成的 Shadowsocks 2022 节点只开放 TCP，不开放 UDP。Clash 配置会在所有业务规则之前明确拒绝 UDP/443，使浏览器的 QUIC 请求立即失败并回落到 HTTP/2/TCP，避免请求继续匹配不支持 UDP 的节点后等待超时。该策略以稳定性为先，不提供 HTTP/3。
+
+仓库中的模板和生成器更新不会覆盖 Clash Verge 中已经导入的配置。升级后必须重新运行 `generate-clash-profile.sh` 并重新导入生成的 YAML，或将模板中的 UDP/443 拒绝规则同步到现有配置，然后在 Clash Verge 中重新加载配置。不要把包含真实端点和密码的配置提交到仓库或粘贴到聊天记录。
+
 快速验证：`doctor.sh` 显示 sing-box active，客户端导入生成 YAML 后验证连通性。密码不会回显，遗失时应通过受控本地秘密文件轮换，而不是从日志中找回。
 
 ## 持续检查、日志与恢复

@@ -7,8 +7,6 @@ mode: rule
 log-level: info
 unified-delay: true
 tcp-concurrent: true
-# VPS sing-box/防火墙仅提供 TCP；提前禁用 QUIC，避免 ChatGPT/Codex 先走不可用 UDP 后重连。
-disable-quic: true
 keep-alive-interval: 30
 
 proxies:
@@ -156,6 +154,10 @@ dns:
     - '+.alibabausercontent.com'
 
 rules:
+  # 当前 VPS 节点仅支持 TCP。明确拒绝 QUIC 使用的 UDP/443，让客户端立即回落到 HTTP/2/TCP，
+  # 避免 UDP 请求命中不支持 UDP 的节点后继续匹配并等待超时。
+  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'
+
   # 钉钉登录、用户信息、消息和图片上传/下载优先本地直连，链路异常时回退 VPS。
   - DOMAIN-SUFFIX,dingtalk.com,🇨🇳 DingTalk
   - DOMAIN-SUFFIX,ddtalk.com,🇨🇳 DingTalk
