@@ -17,4 +17,4 @@ backup_file() {
   cp -p "$file" "$dest"; log_info "Backed up $file to $dest"
 }
 append_once() { local file="$1" marker="$2"; grep -Fqx "$marker" "$file" 2>/dev/null || { backup_file "$file"; printf '%s\n' "$marker" >> "$file"; }; }
-safe_source() { [[ -f "$1" ]] && source "$1"; }
+safe_source() { [[ ! -f "$1" ]] || source "$1"; }

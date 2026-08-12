@@ -15,4 +15,5 @@ fi
 source "$ROOT/lib/utils.sh"
 parse_flags --strict
 [[ "$STRICT" == 1 ]]
+safe_source "$ROOT/tests/does-not-exist.sh"
 printf 'doctor test passed\n'
