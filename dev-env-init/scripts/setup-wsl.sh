@@ -9,7 +9,7 @@ setup_wsl_main() {
   fi
 
   local data_root="${TU_WSL_DATA_ROOT:-/data}"
-  local workspace="${TU_WSL_WORKSPACE:-${data_root}/workspace}" arg
+  local workspace="${TU_WSL_WORKSPACE:-${data_root}/workspace}"
   while (($#)); do
     case "$1" in
       --path) [[ -n "${2:-}" ]] || { log_error '--path 需要目录参数'; return 2; }; workspace="$2"; shift 2;;

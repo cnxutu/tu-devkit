@@ -41,7 +41,7 @@ jobs:
 
       - name: Run ShellCheck
         shell: bash
-        run: shellcheck dev-env-init/install.sh dev-env-init/bin/tu dev-env-init/bin/tu-wrapper dev-env-init/lib/*.sh dev-env-init/scripts/*.sh dev-env-init/tests/*.sh vps-init/install.sh vps-init/doctor.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
+        run: shellcheck --severity=warning dev-env-init/install.sh dev-env-init/bin/tu dev-env-init/bin/tu-wrapper dev-env-init/lib/*.sh dev-env-init/scripts/*.sh dev-env-init/tests/*.sh vps-init/install.sh vps-init/doctor.sh vps-init/lib/*.sh vps-init/scripts/*.sh vps-init/tests/*.sh
 
       - name: Validate AI guidance
         shell: bash

@@ -2,7 +2,7 @@
 
 setup_git_main() {
   parse_flags "$@"
-  local email="" arg key_file="${HOME}/.ssh/id_ed25519" public_key
+  local email="" key_file="${HOME}/.ssh/id_ed25519" public_key
   while (($#)); do
     case "$1" in
       --email) [[ -n "${2:-}" ]] || { log_error '--email 需要邮箱参数'; return 2; }; email="$2"; shift 2;;
@@ -22,7 +22,7 @@ setup_git_main() {
       log_info "[DRY-RUN] generate $key_file with comment: $email"
       return 0
     fi
-    mkdir -p -m 700 "${HOME}/.ssh"
+    install -d -m 700 "${HOME}/.ssh"
     log_info '将生成新的 Ed25519 私钥；请按提示设置并妥善保管 passphrase'
     ssh-keygen -t ed25519 -C "$email" -f "$key_file"
   else

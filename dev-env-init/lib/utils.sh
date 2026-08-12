@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1090,SC2034 # Helpers are sourced dynamically; flags are consumed by callers.
 CONFIG_DIR="${XDG_CONFIG_HOME:-${HOME}/.config}/tu-devkit"
 BACKUP_DIR="${CONFIG_DIR}/backups"
 YES=0; VERBOSE=0; STRICT=0; DRY_RUN=0
@@ -12,8 +13,8 @@ version_of() {
   else true; fi
 }
 backup_file() {
-  local file="$1"; [[ -e "$file" ]] || return 0
-  mkdir -p "$BACKUP_DIR"; local dest="${BACKUP_DIR}/$(basename "$file").$(date +%Y%m%d%H%M%S).bak"
+  local file="$1" dest; [[ -e "$file" ]] || return 0
+  mkdir -p "$BACKUP_DIR"; dest="${BACKUP_DIR}/$(basename "$file").$(date +%Y%m%d%H%M%S).bak"
   cp -p "$file" "$dest"; log_info "Backed up $file to $dest"
 }
 append_once() { local file="$1" marker="$2"; grep -Fqx "$marker" "$file" 2>/dev/null || { backup_file "$file"; printf '%s\n' "$marker" >> "$file"; }; }
