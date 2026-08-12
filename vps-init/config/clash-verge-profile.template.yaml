@@ -10,6 +10,17 @@ unified-delay: true
 tcp-concurrent: true
 keep-alive-interval: 30
 
+# AI 开发客户端使用 SSE/长连接，必须由 TUN 接管并劫持系统 DNS，避免应用绕过
+# Mihomo 后解析到污染地址或在系统代理关闭时直连失败。
+tun:
+  enable: true
+  stack: mixed
+  auto-route: true
+  auto-detect-interface: true
+  dns-hijack:
+    - any:53
+  strict-route: true
+
 profile:
   # 保留策略组选择与 Fake-IP 映射，减少 Clash 重启后的重复解析和连接抖动。
   store-selected: true
@@ -29,6 +40,18 @@ proxies:
     udp: false
 
 proxy-groups:
+  # AI 开发流量不提供 DIRECT 选项，避免 store-selected 恢复历史选择后让 Codex、
+  # ChatGPT 或 API 请求绕过 VPS。探测 ChatGPT 本身，而不是只探测通用 CDN。
+  - name: 🤖 AI Development
+    type: select
+    proxies:
+      - VPS-SantaClara
+    url: https://chatgpt.com/favicon.ico
+    interval: 60
+    lazy: false
+    timeout: 8000
+    expected-status: 200-499
+    disable-udp: true
   - name: 🚀 Proxy
     type: select
     proxies:
@@ -231,29 +254,30 @@ rules:
   - DOMAIN-SUFFIX,alicdn.com,🇨🇳 DingTalk
   - DOMAIN-SUFFIX,alibabausercontent.com,🇨🇳 DingTalk
 
-  # ChatGPT 页面、登录、静态资源、验证、上传和流式连接必须使用同一代理。
-  - DOMAIN-SUFFIX,chatgpt.com,🚀 Proxy
-  - DOMAIN-SUFFIX,chat.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,api.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,auth.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,auth0.com,🚀 Proxy
-  - DOMAIN-SUFFIX,oaistatic.com,🚀 Proxy
-  - DOMAIN-SUFFIX,oaiusercontent.com,🚀 Proxy
-  - DOMAIN-SUFFIX,openaiusercontent.com,🚀 Proxy
-  - DOMAIN-SUFFIX,cdn.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,files.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,realtime.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,platform.openai.com,🚀 Proxy
-  - DOMAIN-SUFFIX,challenges.cloudflare.com,🚀 Proxy
-  - DOMAIN-SUFFIX,cloudflare.com,🚀 Proxy
-  - DOMAIN-SUFFIX,cloudflare.net,🚀 Proxy
-  - DOMAIN-SUFFIX,cloudflareinsights.com,🚀 Proxy
-  - DOMAIN-SUFFIX,sentry.io,🚀 Proxy
-  - DOMAIN-SUFFIX,statsigapi.net,🚀 Proxy
-  - DOMAIN-SUFFIX,statsig.com,🚀 Proxy
-  - DOMAIN-SUFFIX,arkoselabs.com,🚀 Proxy
-  - DOMAIN-SUFFIX,client-api.arkoselabs.com,🚀 Proxy
+  # ChatGPT 页面、Codex backend、登录、静态资源、验证、上传和流式连接必须使用
+  # 不含 DIRECT 的同一 AI 专属出口。
+  - DOMAIN-SUFFIX,chatgpt.com,🤖 AI Development
+  - DOMAIN-SUFFIX,chat.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,api.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,auth.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,auth0.com,🤖 AI Development
+  - DOMAIN-SUFFIX,oaistatic.com,🤖 AI Development
+  - DOMAIN-SUFFIX,oaiusercontent.com,🤖 AI Development
+  - DOMAIN-SUFFIX,openaiusercontent.com,🤖 AI Development
+  - DOMAIN-SUFFIX,cdn.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,files.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,realtime.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,platform.openai.com,🤖 AI Development
+  - DOMAIN-SUFFIX,challenges.cloudflare.com,🤖 AI Development
+  - DOMAIN-SUFFIX,cloudflare.com,🤖 AI Development
+  - DOMAIN-SUFFIX,cloudflare.net,🤖 AI Development
+  - DOMAIN-SUFFIX,cloudflareinsights.com,🤖 AI Development
+  - DOMAIN-SUFFIX,sentry.io,🤖 AI Development
+  - DOMAIN-SUFFIX,statsigapi.net,🤖 AI Development
+  - DOMAIN-SUFFIX,statsig.com,🤖 AI Development
+  - DOMAIN-SUFFIX,arkoselabs.com,🤖 AI Development
+  - DOMAIN-SUFFIX,client-api.arkoselabs.com,🤖 AI Development
 
   # Postman 客户端的登录、同步、集合与工作区请求优先走代理；
   # 不影响在 Postman 中请求的其他业务 API，它们仍按后续 GEOIP/MATCH 决策。
@@ -273,10 +297,10 @@ rules:
   - DOMAIN-SUFFIX,googleusercontent.com,🚀 Proxy
   - DOMAIN-SUFFIX,ggpht.com,🚀 Proxy
   - DOMAIN-SUFFIX,safebrowsing.googleapis.com,🚀 Proxy
-  - DOMAIN-SUFFIX,anthropic.com,🚀 Proxy
-  - DOMAIN-SUFFIX,claude.ai,🚀 Proxy
-  - DOMAIN-SUFFIX,gemini.google.com,🚀 Proxy
-  - DOMAIN-SUFFIX,bard.google.com,🚀 Proxy
+  - DOMAIN-SUFFIX,anthropic.com,🤖 AI Development
+  - DOMAIN-SUFFIX,claude.ai,🤖 AI Development
+  - DOMAIN-SUFFIX,gemini.google.com,🤖 AI Development
+  - DOMAIN-SUFFIX,bard.google.com,🤖 AI Development
   - DOMAIN-SUFFIX,huggingface.co,🚀 Proxy
   - DOMAIN-SUFFIX,hf.co,🚀 Proxy
   - DOMAIN-SUFFIX,paperswithcode.com,🚀 Proxy
