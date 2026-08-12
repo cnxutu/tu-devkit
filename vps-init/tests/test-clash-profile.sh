@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC1091 # Test sources the package helper through a computed root.
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 tmp="$(mktemp -d)"; trap 'rm -rf "$tmp"' EXIT
+source "$ROOT/lib/common.sh"
 cp "$ROOT/config/vps.example.yaml" "$tmp/vps.local.yaml"
 printf '%s\n' 'MDEyMzQ1Njc4OWFiY2RlZg==' > "$tmp/sing-box-password"
 
@@ -53,7 +55,7 @@ steam_web_line="$(grep -nF '  - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainm
   echo 'Clash routing rule order is invalid' >&2
   exit 1
 }
-[[ "$(stat -c '%a' "$profile")" == 600 ]] || { echo 'Clash profile permissions must be 600' >&2; exit 1; }
+[[ "$(file_mode "$profile")" == 600 ]] || { echo 'Clash profile permissions must be 600' >&2; exit 1; }
 
 sed 's/2022-blake3-aes-128-gcm/2022-blake3-aes-256-gcm/' "$tmp/vps.local.yaml" > "$tmp/vps-256.yaml"
 printf '%s\n' 'MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=' > "$tmp/sing-box-password-256"

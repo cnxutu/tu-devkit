@@ -7,6 +7,7 @@ test_home="$(mktemp -d)"
 (
   set -Eeuo pipefail
   export HOME="$test_home"
+  export NVM_DIR="$HOME/.nvm"
   source "$ROOT/lib/logging.sh"
   source "$ROOT/lib/platform.sh"
   source "$ROOT/lib/utils.sh"

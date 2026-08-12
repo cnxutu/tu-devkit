@@ -11,8 +11,8 @@ write_profile_state secure-transition; [[ "$(read_profile_state)" == secure-tran
 write_capabilities sing-box wireguard clash-remote
 capability_recorded sing-box; capability_recorded wireguard; capability_recorded clash-remote
 write_capabilities sing-box; capability_recorded wireguard
-[[ "$(stat -c %a "$CAPABILITIES_STATE_FILE")" == 600 ]]
+[[ "$(file_mode "$CAPABILITIES_STATE_FILE")" == 600 ]]
 record_managed_ufw_rule 'tu-devkit-vps-init test'; managed_ufw_rule_recorded 'tu-devkit-vps-init test'
 forget_managed_ufw_rule 'tu-devkit-vps-init test'; if managed_ufw_rule_recorded 'tu-devkit-vps-init test'; then exit 1; fi
-[[ "$(stat -c %a "$PROFILE_STATE_FILE")" == 600 ]]
+[[ "$(file_mode "$PROFILE_STATE_FILE")" == 600 ]]
 printf 'vps-init state test passed\n'

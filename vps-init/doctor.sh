@@ -79,8 +79,8 @@ if expected_capability clash-remote; then
   check 'Clash Remote service active' systemctl is-active --quiet tu-devkit-clash-remote.service
   check "Clash Remote bound only to ${remote_bind}:${remote_port}" port_listening_only_on "$remote_bind" "$remote_port"
   check 'Clash Remote UFW rule limited to wg0' ufw_rule_present "tu-devkit-vps-init clash-remote-${remote_port}"
-  check 'Clash Remote published profile permission is 640' test "$(stat -c %a "${VPS_INIT_STATE_DIR}/subscriptions/vps-clash.yaml" 2>/dev/null)" = 640
-  check 'Clash Remote URL permission is 600' test "$(stat -c %a "$remote_url_file" 2>/dev/null)" = 600
+  check 'Clash Remote published profile permission is 640' test "$(file_mode "${VPS_INIT_STATE_DIR}/subscriptions/vps-clash.yaml" 2>/dev/null)" = 640
+  check 'Clash Remote URL permission is 600' test "$(file_mode "$remote_url_file" 2>/dev/null)" = 600
   check 'Clash Remote private HTTP health' check_remote_health "$remote_url_file"
 fi
 if [[ "$profile" == secure-transition ]]; then

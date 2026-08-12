@@ -22,6 +22,10 @@ require_root() {
   die 'Run as root or with sudo.'
 }
 require_command() { command -v "$1" >/dev/null 2>&1 || die "Required command not found: $1"; }
+file_mode() {
+  local file="$1"
+  stat -c '%a' "$file" 2>/dev/null || stat -f '%Lp' "$file"
+}
 confirm() {
   [[ "$VPS_INIT_YES" == 1 ]] && return 0
   local answer
