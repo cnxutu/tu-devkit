@@ -158,6 +158,7 @@ Remote 检查包括 systemd 服务、私网监听、`wg0` UFW 规则、发布文
 ## 4. 安全与兼容边界
 
 - Shadowsocks 2022 保持 TCP-only，节点为 `udp: false`；Clash 在业务规则之前拒绝 UDP/443，使 QUIC 快速回落 HTTP/2/TCP。
+- Steam 商店/社区主页面继续走 `🎬 Entertainment`；`steamstatic.com` 等图片与前端 CDN 默认走 `🎮 Steam CDN → DIRECT`，可在 Clash Verge 中手动回退 VPS，避免大量小资源绕行美国节点。
 - Remote 复用同一份完整 Clash 模板；本地 YAML 导入仍受支持，且不会被自动转换或覆盖。
 - 只有显式运行 `show-clash-remote-url.sh` 才显示敏感 URL；安装日志不记录 URL/token。
 - sing-box 从官方 SagerNet APT stable 仓库安装，并固定校验 GPG 指纹 `2C317FBD5D886B4E89BAE8DA6D9152172A2B2F0C`，不执行 `curl | sh`。

@@ -25,6 +25,10 @@ grep -Fq "  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'" "$profile"
 grep -Fq '  - DOMAIN-SUFFIX,github.com,🚀 Proxy' "$profile"
 grep -Fq '  - name: 🎬 Entertainment' "$profile"
 grep -Fq '  - DOMAIN-SUFFIX,youtube.com,🎬 Entertainment' "$profile"
+grep -Fq '  - name: 🎮 Steam CDN' "$profile"
+grep -Fq '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$profile"
+grep -Fq "    '+.steamstatic.com':" "$profile"
+grep -Fq "    - '+.steamstatic.com'" "$profile"
 if grep -Fq 'GEOSITE,' "$profile"; then
   echo 'Clash profile must not require GeoSite.dat for cold start' >&2
   exit 1
@@ -43,7 +47,9 @@ reject_line="$(grep -nF "  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'" "$prof
 business_line="$(grep -nF '  - DOMAIN-SUFFIX,dingtalk.com,' "$profile" | cut -d: -f1)"
 geoip_line="$(grep -nF "  - 'GEOIP,CN,DIRECT'" "$profile" | cut -d: -f1)"
 match_line="$(grep -nF "  - 'MATCH,🚀 Proxy'" "$profile" | cut -d: -f1)"
-(( private_line < reject_line && reject_line < business_line && business_line < geoip_line && geoip_line < match_line )) || {
+steam_cdn_line="$(grep -nF '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$profile" | cut -d: -f1)"
+steam_web_line="$(grep -nF '  - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainment' "$profile" | cut -d: -f1)"
+(( private_line < reject_line && reject_line < business_line && business_line < steam_cdn_line && steam_cdn_line < steam_web_line && steam_web_line < geoip_line && geoip_line < match_line )) || {
   echo 'Clash routing rule order is invalid' >&2
   exit 1
 }

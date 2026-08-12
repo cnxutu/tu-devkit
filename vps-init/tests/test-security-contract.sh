@@ -35,6 +35,10 @@ if grep -Eq '0\.0\.0\.0.*CLASH_REMOTE|CLASH_REMOTE.*0\.0\.0\.0' "$ROOT/scripts/c
 if grep -Eq 'curl[^\n]*\|[[:space:]]*(sh|bash)' "$ROOT/scripts/sing-box-repository.sh"; then echo 'curl pipe-to-shell found' >&2; exit 1; fi
 grep -Fq '    udp: false' "$ROOT/config/clash-verge-profile.template.yaml"
 grep -Fq "  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'" "$ROOT/config/clash-verge-profile.template.yaml"
+grep -Fq '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$ROOT/config/clash-verge-profile.template.yaml"
+steam_cdn_line="$(grep -nF '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$ROOT/config/clash-verge-profile.template.yaml" | cut -d: -f1)"
+steam_web_line="$(grep -nF '  - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainment' "$ROOT/config/clash-verge-profile.template.yaml" | cut -d: -f1)"
+(( steam_cdn_line < steam_web_line )) || { echo 'Steam CDN rule must precede Steam web proxy rules' >&2; exit 1; }
 if grep -Fq 'disable-quic:' "$ROOT/config/clash-verge-profile.template.yaml"; then
   echo 'unsupported disable-quic setting found in Clash configuration' >&2
   exit 1

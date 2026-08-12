@@ -45,6 +45,13 @@ proxy-groups:
     proxies:
       - VPS-SantaClara
       - DIRECT
+  # Steam 商店/社区主页面继续使用境外出口；图片、样式等静态资源优先命中本地 CDN，
+  # 避免页面瀑布流中的每个小文件都绕行美国 VPS。若本地线路异常可手动切回代理。
+  - name: 🎮 Steam CDN
+    type: select
+    proxies:
+      - DIRECT
+      - VPS-SantaClara
   # 钉钉优先使用本地网络；本地 DNS/链路不可用时自动回退到 VPS，
   # 避免把国内 API 和图片 CDN 固定送到延迟较高的海外节点。
   - name: 🇨🇳 DingTalk
@@ -111,6 +118,13 @@ dns:
       - https://dns.alidns.com/dns-query
     '+.alibabausercontent.com':
       - https://dns.alidns.com/dns-query
+    # Steam 静态资源走本地 CDN 时同步使用国内 DNS，避免拿到美国 VPS 附近的边缘节点。
+    '+.steamstatic.com':
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
+    '+.steamusercontent.com':
+      - https://dns.alidns.com/dns-query
+      - https://doh.pub/dns-query
     '+.chatgpt.com':
       - https://1.1.1.1/dns-query
       - https://8.8.8.8/dns-query
@@ -181,6 +195,9 @@ dns:
     - '+.aliyuncs.com'
     - '+.alicdn.com'
     - '+.alibabausercontent.com'
+    # Steam 内嵌浏览器的静态 CDN 使用真实地址直连，减少 Fake-IP 映射和重复连接。
+    - '+.steamstatic.com'
+    - '+.steamusercontent.com'
 
 rules:
   # 私网和系统连通性检查必须先于代理及 QUIC 规则，避免开发环境、容器和局域网服务绕行 VPS。
@@ -324,7 +341,7 @@ rules:
   - DOMAIN-SUFFIX,microsoft.com,🚀 Proxy
   - DOMAIN-SUFFIX,office.com,🚀 Proxy
 
-  # 常用视频、音乐、直播和游戏平台；单节点不做地区自动切换，统一经 VPS 保持出口一致。
+  # 常用视频、音乐、直播和游戏平台；主站保持境外出口一致。
   - DOMAIN-SUFFIX,youtube.com,🎬 Entertainment
   - DOMAIN-SUFFIX,youtu.be,🎬 Entertainment
   - DOMAIN-SUFFIX,ytimg.com,🎬 Entertainment
@@ -337,6 +354,12 @@ rules:
   - DOMAIN-SUFFIX,scdn.co,🎬 Entertainment
   - DOMAIN-SUFFIX,twitch.tv,🎬 Entertainment
   - DOMAIN-SUFFIX,twitchcdn.net,🎬 Entertainment
+  # Steam 商店/社区的静态图片和前端资源优先直连本地 CDN；这些规则必须位于
+  # steampowered.com、steamcommunity.com 和最终 MATCH 之前。
+  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN
+  - DOMAIN-SUFFIX,steamusercontent.com,🎮 Steam CDN
+  - DOMAIN,steamcdn-a.akamaihd.net,🎮 Steam CDN
+  - DOMAIN,steamuserimages-a.akamaihd.net,🎮 Steam CDN
   - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainment
   - DOMAIN-SUFFIX,steampowered.com,🎬 Entertainment
 
