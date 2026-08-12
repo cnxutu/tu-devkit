@@ -6,7 +6,7 @@
 
 - [AI Engineering Context Platform](./ai-guidance/README.md)：P1–P4 的系统知识、AI 使用说明、角色、规则、Skill 与 Template。
 - [AI 开发环境初始化](./dev-env-init/README.md)：`tu` 命令和开发环境安装说明。
-- [VPS 网络环境初始化](./vps-init/README.md)：Ubuntu VPS 的安全基线、WireGuard 与可选 sing-box 初始化。
+- [VPS 网络环境初始化](./vps-init/README.md)：Quick/Secure 双路线、可选 WireGuard、sing-box 与私网 Clash Remote Profile。
 
 根目录只提供导航。各模块的安装、使用和设计说明均在对应二级目录内维护。
 

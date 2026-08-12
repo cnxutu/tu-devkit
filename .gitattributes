@@ -1,2 +1,3 @@
 vps-init/*.sh text eol=lf
 vps-init/**/*.sh text eol=lf
+vps-init/**/*.py text eol=lf

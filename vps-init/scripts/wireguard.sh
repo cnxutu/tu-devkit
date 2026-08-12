@@ -4,7 +4,7 @@ set -Eeuo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/config.sh"
 
-wg_server_address() { local cidr; cidr="$(config_value wireguard ipv4_cidr)"; printf '%s.1/%s\n' "${cidr%.*}" "${cidr#*/}"; }
+wg_server_address() { local cidr; cidr="$(config_value wireguard ipv4_cidr)"; printf '%s/%s\n' "$(wireguard_server_ip)" "${cidr#*/}"; }
 wg_outbound_interface() {
   local value; value="$(config_value wireguard outbound_interface)"
   [[ -n "$value" ]] && { printf '%s\n' "$value"; return; }

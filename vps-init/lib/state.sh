@@ -3,6 +3,7 @@ set -Eeuo pipefail
 
 PROFILE_STATE_FILE="${VPS_INIT_STATE_DIR}/profile"
 MANAGED_UFW_FILE="${VPS_INIT_STATE_DIR}/managed-ufw-rules"
+CAPABILITIES_STATE_FILE="${VPS_INIT_STATE_DIR}/capabilities"
 
 read_profile_state() {
   if [[ -s "$PROFILE_STATE_FILE" ]]; then tr -d '[:space:]' < "$PROFILE_STATE_FILE"; fi
@@ -17,6 +18,24 @@ write_profile_state() {
   printf '%s\n' "$state" > "$tmp"
   chmod 600 "$tmp"
   mv -f "$tmp" "$PROFILE_STATE_FILE"
+}
+
+write_capabilities() {
+  local tmp capability
+  [[ "$VPS_INIT_DRY_RUN" == 1 ]] && { info "[DRY-RUN] record capabilities: $*"; return; }
+  for capability in "$@"; do
+    [[ "$capability" == sing-box || "$capability" == wireguard || "$capability" == clash-remote ]] || die "Invalid capability: $capability"
+  done
+  ensure_private_dir "$VPS_INIT_STATE_DIR"
+  tmp="$(mktemp "${VPS_INIT_STATE_DIR}/.capabilities.XXXXXX")"
+  [[ -f "$CAPABILITIES_STATE_FILE" ]] && cp "$CAPABILITIES_STATE_FILE" "$tmp"
+  for capability in "$@"; do printf '%s\n' "$capability" >> "$tmp"; done
+  sort -u -o "$tmp" "$tmp"
+  chmod 600 "$tmp"; mv -f "$tmp" "$CAPABILITIES_STATE_FILE"
+}
+
+capability_recorded() {
+  [[ -f "$CAPABILITIES_STATE_FILE" ]] && grep -Fqx "$1" "$CAPABILITIES_STATE_FILE"
 }
 
 record_managed_ufw_rule() {

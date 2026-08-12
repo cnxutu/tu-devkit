@@ -21,6 +21,17 @@ ufw_allow_managed() {
   record_managed_ufw_rule "$comment"
 }
 
+ufw_allow_wireguard_service() {
+  local address="$1" port="$2" comment="tu-devkit-vps-init clash-remote-${2}"
+  if ufw status | grep -Fq "$comment"; then record_managed_ufw_rule "$comment"; return; fi
+  if ufw status | grep -Eq "^${port}/tcp[[:space:]].*on wg0"; then
+    info "UFW already allows ${port}/tcp on wg0; preserving the existing rule."
+    return
+  fi
+  run ufw allow in on wg0 to "$address" port "$port" proto tcp comment "$comment"
+  record_managed_ufw_rule "$comment"
+}
+
 configure_fail2ban() {
   local ports="$1" candidate=/etc/fail2ban/jail.d/99-tu-devkit-vps-init.local tmp backup_dir previous
   backup_dir="${VPS_INIT_STATE_DIR}/backups/fail2ban"
@@ -50,7 +61,7 @@ EOF
 }
 
 configure_firewall() {
-  local current_port target_port wg_port sb_port ssh_ports
+  local current_port target_port wg_port sb_port ssh_ports remote_address
   current_port="$(config_value_or ssh current_port 22)"; target_port="$(config_value ssh port)"
   wg_port="$(config_value wireguard port)"; sb_port="$(config_value sing_box port)"
   if [[ "$VPS_INIT_DRY_RUN" == 1 ]]; then
@@ -69,6 +80,10 @@ configure_firewall() {
   fi
   feature_enabled wireguard && ufw_allow_managed "${wg_port}/udp" "tu-devkit-vps-init wireguard-${wg_port}"
   feature_enabled sing_box && ufw_allow_managed "${sb_port}/tcp" "tu-devkit-vps-init sing-box-${sb_port}"
+  if feature_enabled clash_remote; then
+    remote_address="$(wireguard_server_ip)"
+    ufw_allow_wireguard_service "$remote_address" "$(config_value_or clash_remote port 18080)"
+  fi
   run ufw default deny incoming
   run ufw default allow outgoing
   run ufw --force enable

@@ -27,6 +27,11 @@ grep -Fq 'mktemp "$output_dir/.vps-clash.XXXXXX"' "$ROOT/scripts/generate-clash-
 grep -Fq '2C317FBD5D886B4E89BAE8DA6D9152172A2B2F0C' "$ROOT/scripts/sing-box-repository.sh"
 grep -Fq 'https://deb.sagernet.org/' "$ROOT/scripts/sing-box-repository.sh"
 grep -Fq 'Enabled: yes' "$ROOT/scripts/sing-box-repository.sh"
+grep -Fq 'Requires=wg-quick@wg0.service' "$ROOT/scripts/clash-remote.sh"
+grep -Fq 'ProtectSystem=strict' "$ROOT/scripts/clash-remote.sh"
+grep -Fq 'ufw allow in on wg0' "$ROOT/scripts/firewall.sh"
+grep -Fq 'log_message' "$ROOT/scripts/clash-remote-server.py"
+if grep -Eq '0\.0\.0\.0.*CLASH_REMOTE|CLASH_REMOTE.*0\.0\.0\.0' "$ROOT/scripts/clash-remote.sh"; then echo 'public Clash Remote bind found' >&2; exit 1; fi
 if grep -Eq 'curl[^\n]*\|[[:space:]]*(sh|bash)' "$ROOT/scripts/sing-box-repository.sh"; then echo 'curl pipe-to-shell found' >&2; exit 1; fi
 grep -Fq '    udp: false' "$ROOT/config/clash-verge-profile.template.yaml"
 grep -Fq "  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'" "$ROOT/config/clash-verge-profile.template.yaml"

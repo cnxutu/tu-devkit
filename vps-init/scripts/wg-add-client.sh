@@ -9,6 +9,7 @@ client_dir="${VPS_INIT_STATE_DIR}/clients"; ensure_private_dir "$client_dir"; [[
 if [[ "$VPS_INIT_DRY_RUN" == 1 ]]; then info "[DRY-RUN] create WireGuard client $alias_name"; exit 0; fi
 umask 077; private="$(wg genkey)"; public="$(printf '%s' "$private" | wg pubkey)"; server_public="$(< /etc/wireguard/server_public.key)"
 cidr="$(config_value wireguard ipv4_cidr)"; prefix="${cidr%.*}"; index=$(( $(find "$client_dir" -name '*.conf' -type f | wc -l) + 2 )); address="${prefix}.${index}/${cidr#*/}"
+allowed_ips="$(wireguard_client_allowed_ips)"
 endpoint="$(public_endpoint)"; [[ -n "$endpoint" ]] || die 'server.public_endpoint must be set before creating a client.'
 cat > "$client_dir/$alias_name.conf" <<EOF
 [Interface]
@@ -17,7 +18,7 @@ Address = ${address}
 [Peer]
 PublicKey = ${server_public}
 Endpoint = ${endpoint}:$(config_value wireguard port)
-AllowedIPs = 0.0.0.0/0
+AllowedIPs = ${allowed_ips}
 PersistentKeepalive = 25
 EOF
 chmod 600 "$client_dir/$alias_name.conf"

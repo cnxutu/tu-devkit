@@ -35,12 +35,16 @@ if [[ -n "$profile" ]]; then
   [[ "$verified_ssh" == 0 || "$finalize" == 1 ]] || die '--verified-ssh requires --finalize.'
   if [[ "$profile" == quick ]]; then
     [[ "$finalize" == 0 ]] || die 'The quick profile has no finalize step.'
-    phases='base,firewall,sing-box,clash'
+    phases='base,firewall'
+    feature_enabled wireguard && phases="${phases},wireguard"
+    phases="${phases},sing-box,clash"
+    feature_enabled clash_remote && phases="${phases},clash-remote"
   elif [[ "$finalize" == 1 ]]; then
     [[ "$verified_ssh" == 1 ]] || die 'Secure finalize requires --verified-ssh; --yes cannot replace this confirmation.'
     phases='ssh-finalize,firewall-finalize'
   else
     phases='base,firewall,ssh-hardening,wireguard,sing-box,clash'
+    feature_enabled clash_remote && phases="${phases},clash-remote"
   fi
   VPS_INIT_PROFILE="$profile"
 else
@@ -48,6 +52,9 @@ else
   VPS_INIT_PROFILE='legacy'
 fi
 validate_config
+if [[ "$profile" == quick && "$(config_value_or clash_remote enabled false)" == true && "$(config_value wireguard enabled)" != true ]]; then
+  die 'Quick clash_remote requires wireguard.enabled: true.'
+fi
 if [[ -n "$profile" ]]; then
   endpoint="$(public_endpoint)"; [[ -n "$endpoint" ]] || die 'server.public_endpoint is required for Profile installs.'
 fi
@@ -91,16 +98,26 @@ for phase in "${requested[@]}"; do
     wireguard) source "$ROOT/scripts/wireguard.sh"; setup_wireguard;;
     sing-box) source "$ROOT/scripts/sing-box.sh"; setup_sing_box;;
     clash) "$ROOT/scripts/generate-clash-profile.sh";;
+    clash-remote) source "$ROOT/scripts/clash-remote.sh"; setup_clash_remote;;
     *) die "Unknown phase: $phase";;
   esac
 done
 if [[ -n "$profile" ]]; then
   if [[ "$profile" == quick ]]; then
     write_profile_state quick
+    capabilities=(sing-box)
+    feature_enabled wireguard && capabilities+=(wireguard)
+    feature_enabled clash_remote && capabilities+=(clash-remote)
+    write_capabilities "${capabilities[@]}"
   elif [[ "$finalize" == 1 || "$(config_value_or ssh current_port 22)" == "$(config_value ssh port)" ]]; then
     write_profile_state secure
   else
     write_profile_state secure-transition
     info "Secure transition is ready. Verify a new SSH session on port $(config_value ssh port), then run: ./install.sh --profile secure --finalize --verified-ssh --config '$CONFIG_FILE'"
+  fi
+  if [[ "$profile" == secure && "$finalize" == 0 ]]; then
+    capabilities=(sing-box wireguard)
+    feature_enabled clash_remote && capabilities+=(clash-remote)
+    write_capabilities "${capabilities[@]}"
   fi
 fi

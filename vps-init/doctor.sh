@@ -20,6 +20,23 @@ check() {
 }
 ufw_rule_present() { ufw status | grep -Fq "$1"; }
 port_listening() { ss -H -ltn | awk '{print $4}' | grep -Eq ":$1$"; }
+port_listening_only_on() {
+  local address="$1" port="$2" listeners
+  listeners="$(ss -H -ltn | awk -v suffix=":${port}" '$4 ~ suffix "$" {print $4}')"
+  [[ -n "$listeners" ]] && [[ "$listeners" == "${address}:${port}" ]]
+}
+expected_capability() {
+  local capability="$1"
+  if [[ -f "$CAPABILITIES_STATE_FILE" ]]; then capability_recorded "$capability"; return; fi
+  [[ "$capability" == sing-box ]] && return 0
+  [[ "$capability" == wireguard && ( "$profile" == secure-transition || "$profile" == secure ) ]]
+}
+check_remote_health() {
+  local url_file="$1" url
+  [[ -s "$url_file" ]] || return 1
+  url="$(< "$url_file")"
+  printf 'url = "%s"\n' "$url" | curl --fail --silent --output /dev/null --config -
+}
 check_sing_box_key() {
   local password_file="$1" key_length="$2" password
   [[ -s "$password_file" ]] || return 1
@@ -52,9 +69,19 @@ check 'sing-box configuration valid' sing-box check -c /etc/sing-box/config.json
 check "sing-box port $(config_value sing_box port)/tcp allowed" ufw_rule_present "$(config_value sing_box port)/tcp"
 check "sing-box ${key_length}-byte key valid" check_sing_box_key "$password_file" "$key_length"
 check 'sing-box installed version recorded' test -s "${VPS_INIT_STATE_DIR}/sing-box-version"
-if [[ "$profile" == secure-transition || "$profile" == secure ]]; then
+if expected_capability wireguard; then
   check 'WireGuard wg0 active' systemctl is-active --quiet wg-quick@wg0
   check "WireGuard port $(config_value wireguard port)/udp allowed" ufw_rule_present "$(config_value wireguard port)/udp"
+fi
+if expected_capability clash-remote; then
+  remote_bind="$(wireguard_server_ip)"; remote_port="$(config_value_or clash_remote port 18080)"
+  remote_url_file="${VPS_INIT_STATE_DIR}/secrets/clash-remote-url"
+  check 'Clash Remote service active' systemctl is-active --quiet tu-devkit-clash-remote.service
+  check "Clash Remote bound only to ${remote_bind}:${remote_port}" port_listening_only_on "$remote_bind" "$remote_port"
+  check 'Clash Remote UFW rule limited to wg0' ufw_rule_present "tu-devkit-vps-init clash-remote-${remote_port}"
+  check 'Clash Remote published profile permission is 640' test "$(stat -c %a "${VPS_INIT_STATE_DIR}/subscriptions/vps-clash.yaml" 2>/dev/null)" = 640
+  check 'Clash Remote URL permission is 600' test "$(stat -c %a "$remote_url_file" 2>/dev/null)" = 600
+  check 'Clash Remote private HTTP health' check_remote_health "$remote_url_file"
 fi
 if [[ "$profile" == secure-transition ]]; then
   printf '\nNEXT Verify a new key-only SSH session on port %s, then run:\n' "$target_port"
