@@ -24,7 +24,7 @@ setup_sing_box() {
   backup_file "$candidate" "${VPS_INIT_STATE_DIR}/backups/sing-box"
   config_tmp="$(mktemp)"; previous="${candidate}.previous"
   cat > "$config_tmp" <<EOF
-{"inbounds":[{"type":"shadowsocks","listen":"${listen}","listen_port":${port},"network":"tcp","method":"${method}","password":"${password}"}]}
+{"dns":{"servers":[{"type":"local","tag":"local"}],"strategy":"ipv4_only"},"route":{"default_domain_resolver":{"server":"local","strategy":"ipv4_only"}},"inbounds":[{"type":"shadowsocks","listen":"${listen}","listen_port":${port},"network":"tcp","method":"${method}","password":"${password}","multiplex":{"enabled":true,"padding":false}}]}
 EOF
   [[ -e "$candidate" ]] && cp -a "$candidate" "$previous"
   install -m 600 "$config_tmp" "$candidate"; rm -f "$config_tmp"

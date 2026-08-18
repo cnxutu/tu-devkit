@@ -88,7 +88,7 @@ clash_remote:
 sudo ./scripts/wg-add-client.sh laptop
 ```
 
-`client_mode: full` 适合希望客户端全量流量进入 WG 的情况；只为了访问私网订阅时建议使用 `management`。
+`client_mode: full` 适合希望客户端全量流量进入 WG 的情况；只为了访问私网订阅和 AI 私网入口时建议使用 `management`。生成的 `🤖 AI Development` 组会优先使用 `VPS-WireGuard (10.66.66.1)`，私网探测失败时自动回退 `VPS-SantaClara` 公网入口。
 
 ### C. Quick + WG + Remote
 
@@ -155,9 +155,35 @@ Prepare 会保留旧/新 SSH 端口、切换到非 root 密钥认证、安装 WG
 
 Remote 检查包括 systemd 服务、私网监听、`wg0` UFW 规则、发布文件权限和脱敏 HTTP 健康检查。过渡状态会明确输出下一条 Finalize 命令。
 
-## 4. 安全与兼容边界
+## 4. Clash/Codex 稳定性验收
 
-- Shadowsocks 2022 保持 TCP-only，节点为 `udp: false`；Clash 在业务规则之前拒绝 UDP/443，使 QUIC 快速回落 HTTP/2/TCP。
+新生成的节点启用 TCP Keep Alive，但不启用客户端 `smux`。实测 Codex 的模型刷新、WebSocket 与长流式响应在 `h2mux` 下会共享底层连接，连接迁移时会一起重试；普通 Shadowsocks TCP 的稳定性更好。sing-box 入站保留 multiplex 兼容能力并固定 `padding: false`，同时允许普通非 multiplex 客户端。VPS 未配置 IPv6 默认路由时，服务端域名解析固定使用 `ipv4_only`，避免解析到 AAAA 后出现 `cannot assign requested address`。升级顺序如下：
+
+1. 在 VPS 上更新仓库，先重新执行原 Quick/Secure 安装命令，再运行 `doctor.sh`。
+2. 确认 sing-box 已重启且校验通过，再导入不含 `smux` 的新 Clash YAML。
+3. 将 Clash Verge Rev 升级到计划使用的新版，连接 WireGuard（如已启用），再导入或刷新 Profile。
+4. 运行本机核验工具，确认的是 Mihomo 合并后的实际运行值，而不只是 YAML 文本。
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-clash-runtime.ps1
+```
+
+检查器优先连接本机 `127.0.0.1:9097`。若新版 Clash Verge 仅开放命名管道而未开放 REST Controller，则自动回退读取合并后的 `clash-verge.yaml`，检查 Rule 模式、IPv6、`smux`、TUN 与 AI 组不含 `DIRECT`；静态回退不会读取或输出节点密码。若 Controller 可用，还会执行当前节点和公网回退节点的多次 ChatGPT 延迟探测。若 Controller 端口或 secret 不同：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\check-clash-runtime.ps1 `
+  -Controller http://127.0.0.1:9090 -PromptForSecret
+```
+
+`-PromptForSecret` 会用受保护的交互输入读取 Controller secret，不要把 secret 直接写入脚本、文档或命令历史。
+
+Clash Verge 的应用级设置可能覆盖 Profile 里的 `mixed-port` / `ipv6` / `tun`，这正是之前只检查生成 YAML 仍会漏掉运行时偏差的原因。若依赖 TUN 接管 Codex，额外传入 `-RequireTun`；否则 TUN 关闭只会警告，但必须确认 Codex 能稳定跟随系统代理。
+
+回滚时先切回旧 Clash Profile；服务端脚本在 sing-box 配置校验或重启失败时会恢复上一版。
+
+## 5. 安全与兼容边界
+
+- Shadowsocks 2022 保持 TCP-only，节点为 `udp: false`；Clash 在业务规则之前拒绝 UDP/443，使 QUIC 快速回落 HTTP/2/TCP。服务端入站保留 multiplex 兼容能力，当前 Codex 客户端使用普通 TCP，不启用 `smux`。
 - Steam 商店/社区主页面继续走 `🎬 Entertainment`；`steamstatic.com` 等图片与前端 CDN 默认走 `🎮 Steam CDN → DIRECT`，可在 Clash Verge 中手动回退 VPS，避免大量小资源绕行美国节点。
 - Remote 复用同一份完整 Clash 模板；本地 YAML 导入仍受支持，且不会被自动转换或覆盖。
 - 只有显式运行 `show-clash-remote-url.sh` 才显示敏感 URL；安装日志不记录 URL/token。
@@ -165,7 +191,7 @@ Remote 检查包括 systemd 服务、私网监听、`wg0` UFW 规则、发布文
 - `--phase` 仍作为高级兼容入口；`--profile` 与 `--phase` 互斥。未指定入口时只显示帮助，不修改服务器。
 - 云厂商安全组、DNS、TLS 证书与 VPS 购买不由脚本修改。
 
-## 5. 开发验证
+## 6. 开发验证
 
 ```bash
 bash vps-init/tests/run.sh

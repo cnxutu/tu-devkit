@@ -42,7 +42,8 @@ flowchart LR
   WG["WireGuard 隧道"]
   RP["10.66.66.1:18080<br/>Remote Profile 服务"]
   CY["完整 Clash YAML"]
-  SS["Shadowsocks 2022 TCP"]
+  SSP["Shadowsocks 2022 TCP<br/>公网入口"]
+  SSW["Shadowsocks 2022 TCP<br/>10.66.66.1 私网入口"]
   SB["VPS sing-box"]
   GPT["chatgpt.com / cdn.openai.com"]
 
@@ -50,12 +51,15 @@ flowchart LR
   WG --> RP
   RP --> CY
   CY --> CV
-  CV -->|"业务流量：代理 TCP"| SS
-  SS --> SB
+  CV -->|"AI 业务：优先私网"| WG
+  WG --> SSW
+  SSW --> SB
+  CV -->|"健康失败时回退"| SSP
+  SSP --> SB
   SB --> GPT
 ```
 
-使用 `client_mode: management` 时，WG 只承载私网管理/订阅 CIDR；ChatGPT 业务仍通过 Clash 的 Shadowsocks TCP 节点。`full` 则让客户端全部 IP 流量进入 WG，保持旧行为。
+使用 `client_mode: management` 时，WG 只宣告私网 CIDR；Remote Profile 和 `VPS-WireGuard` AI 入口通过该私网路由，其他流量仍由 Clash 规则决定。若 WG 未连接或私网探测失败，`AI Development` 自动回退原公网 Shadowsocks 入口。`full` 则让客户端全部 IP 流量进入 WG。
 
 ## 入站边界
 
@@ -64,4 +68,4 @@ flowchart LR
 - Secure 完成：目标 SSH TCP、WG UDP、sing-box TCP。
 - Remote：只允许 `in on wg0` 到 WG 服务端私网地址和配置端口，不增加公网入站。
 
-sing-box 始终为 TCP-only。Clash 拒绝 UDP/443，使浏览器 QUIC 尝试立即失败并回落到 HTTP/2/TCP。
+sing-box 始终为 TCP-only，同一入站同时接受公网与 `wg0` 私网地址的连接，并显式启用 multiplex。Clash 拒绝 UDP/443，使浏览器 QUIC 尝试立即失败并回落到 HTTP/2/TCP。

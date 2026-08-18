@@ -42,6 +42,17 @@ check_sing_box_key() {
   [[ -s "$password_file" ]] || return 1
   password="$(< "$password_file")"; is_base64_key_length "$password" "$key_length"
 }
+check_sing_box_stability() {
+  jq -e '
+    any(.inbounds[];
+      .type == "shadowsocks" and
+      .multiplex.enabled == true and
+      ((.multiplex.padding // false) == false)
+    ) and
+    .dns.strategy == "ipv4_only" and
+    .route.default_domain_resolver.strategy == "ipv4_only"
+  ' /etc/sing-box/config.json >/dev/null
+}
 current_port="$(config_value_or ssh current_port 22)"; target_port="$(config_value ssh port)"
 check 'UFW active' bash -c 'ufw status | grep -q "Status: active"'
 check 'fail2ban active' systemctl is-active --quiet fail2ban
@@ -66,6 +77,7 @@ password_file="${SING_BOX_PASSWORD_FILE:-${VPS_INIT_STATE_DIR}/secrets/sing-box-
 method="$(config_value sing_box method)"; key_length="$(shadowsocks_key_length "$method")"
 check 'sing-box active' systemctl is-active --quiet sing-box
 check 'sing-box configuration valid' sing-box check -c /etc/sing-box/config.json
+check 'sing-box multiplex padding and IPv4 resolver stable' check_sing_box_stability
 check "sing-box port $(config_value sing_box port)/tcp allowed" ufw_rule_present "$(config_value sing_box port)/tcp"
 check "sing-box ${key_length}-byte key valid" check_sing_box_key "$password_file" "$key_length"
 check 'sing-box installed version recorded' test -s "${VPS_INIT_STATE_DIR}/sing-box-version"

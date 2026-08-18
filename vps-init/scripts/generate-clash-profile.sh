@@ -12,18 +12,25 @@ password="$(< "$password_file")"
 template="$ROOT/config/clash-verge-profile.template.yaml"; [[ -f "$template" ]] || die 'Clash profile template is missing.'
 port="$(config_value sing_box port)"; method="$(config_value sing_box method)"; key_length="$(shadowsocks_key_length "$method")"
 is_base64_key_length "$password" "$key_length" || die "sing-box password is not a valid ${key_length}-byte key for ${method}."
+include_wireguard=0; feature_enabled wireguard && include_wireguard=1
+wireguard_endpoint="$(wireguard_server_ip)"
 output_dir="${VPS_INIT_OUTPUT_DIR:-$ROOT/output}"; ensure_private_dir "$output_dir"; output="$output_dir/vps-clash.yaml"
 output_tmp="$(mktemp "$output_dir/.vps-clash.XXXXXX")"; trap 'rm -f "$output_tmp"' EXIT
-replacements=0
+replacements=0; in_wireguard_block=0
 while IFS= read -r line || [[ -n "$line" ]]; do
+  if [[ "$line" == *'# BEGIN_WIREGUARD_PROXY' ]]; then in_wireguard_block=1; continue; fi
+  if [[ "$line" == *'# END_WIREGUARD_PROXY' ]]; then in_wireguard_block=0; continue; fi
+  (( in_wireguard_block == 1 && include_wireguard == 0 )) && continue
   case "$line" in
     '    server: "your.server.example"') printf '    server: "%s"\n' "$endpoint"; (( replacements += 1 ));;
+    '    server: "your.wireguard.server"') printf '    server: "%s"\n' "$wireguard_endpoint"; (( replacements += 1 ));;
     '    port: 8080') printf '    port: %s\n' "$port"; (( replacements += 1 ));;
     '    cipher: 2022-blake3-aes-128-gcm') printf '    cipher: %s\n' "$method"; (( replacements += 1 ));;
     '    password: "CHANGE_ME"') printf '    password: "%s"\n' "$password"; (( replacements += 1 ));;
     *) printf '%s\n' "$line";;
   esac
 done < "$template" > "$output_tmp"
-[[ "$replacements" == 4 ]] || die 'Clash profile template placeholders are incomplete.'
+expected_replacements=4; (( include_wireguard == 1 )) && expected_replacements=8
+[[ "$replacements" == "$expected_replacements" ]] || die 'Clash profile template placeholders are incomplete.'
 chmod 600 "$output_tmp"; mv -f "$output_tmp" "$output"; trap - EXIT
 info "Created protected Clash profile at $output"

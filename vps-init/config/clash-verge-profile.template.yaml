@@ -8,7 +8,9 @@ log-level: info
 ipv6: false
 unified-delay: true
 tcp-concurrent: true
-keep-alive-interval: 30
+keep-alive-interval: 15
+keep-alive-idle: 15
+disable-keep-alive: false
 
 # AI 开发客户端使用 SSE/长连接，必须由 TUN 接管并劫持系统 DNS，避免应用绕过
 # Mihomo 后解析到污染地址或在系统代理关闭时直连失败。
@@ -38,18 +40,36 @@ proxies:
     ip-version: ipv4
     # 服务端仅开放 TCP；显式关闭节点 UDP，避免产生不可用的 QUIC 尝试。
     udp: false
+    # Codex/ChatGPT 会使用长时间的流式连接。保持普通 Shadowsocks TCP，
+    # 避免复用层连接迁移同时影响模型刷新、WebSocket 和流式响应。
+
+  # BEGIN_WIREGUARD_PROXY
+  # 开启 WireGuard 时由生成器保留；使 AI 长连接优先避开不稳定的公网入口。
+  - name: "VPS-WireGuard"
+    type: ss
+    server: "your.wireguard.server"
+    port: 8080
+    cipher: 2022-blake3-aes-128-gcm
+    password: "CHANGE_ME"
+    ip-version: ipv4
+    udp: false
+  # END_WIREGUARD_PROXY
 
 proxy-groups:
-  # AI 开发流量不提供 DIRECT 选项，避免 store-selected 恢复历史选择后让 Codex、
-  # ChatGPT 或 API 请求绕过 VPS。探测 ChatGPT 本身，而不是只探测通用 CDN。
+  # AI 开发流量不提供 DIRECT 选项。开启 WireGuard 时优先使用私网入口，
+  # 私网不可用时自动回退到原公网入口；未开启时仅保留公网节点。
   - name: 🤖 AI Development
-    type: select
+    type: fallback
     proxies:
+      # BEGIN_WIREGUARD_PROXY
+      - VPS-WireGuard
+      # END_WIREGUARD_PROXY
       - VPS-SantaClara
     url: https://chatgpt.com/favicon.ico
     interval: 60
     lazy: false
     timeout: 8000
+    max-failed-times: 2
     expected-status: 200-499
     disable-udp: true
   - name: 🚀 Proxy

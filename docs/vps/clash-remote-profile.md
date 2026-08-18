@@ -1,6 +1,6 @@
 # Clash Remote Profile 教程
 
-Remote Profile 让 Clash Verge 通过 WireGuard 私网读取 VPS 生成的完整 Clash YAML。它只解决“配置交付与更新”，不会远程控制 Clash，也不会改变 Shadowsocks TCP 业务链路。
+Remote Profile 让 Clash Verge 通过 WireGuard 私网读取 VPS 生成的完整 Clash YAML。它不会远程控制 Clash。开启 WireGuard 后，新 Profile 还会为 AI 组生成 `10.66.66.1` 私网 Shadowsocks 入口，并保留公网入口自动回退。
 
 ## 1. 配置服务器
 
@@ -55,7 +55,8 @@ sudo ./show-clash-remote-url.sh
 同时确认：
 
 - Clash Verge 能首次下载并手动刷新。
-- 配置中的 `chatgpt.com`、`cdn.openai.com` 命中 VPS 节点。
+- `🤖 AI Development` 中 `VPS-WireGuard` 在前、`VPS-SantaClara` 在后，且不含 `DIRECT`。
+- 配置中的 `chatgpt.com`、`cdn.openai.com` 命中 AI 组。
 - VPS 公网接口没有 Remote 端口规则；仅有带模块注释的 `wg0` 规则。
 - 断开 WG 后刷新失败，重新连接后恢复；这是正确的私网隔离行为。
 
