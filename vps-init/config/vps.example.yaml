@@ -14,7 +14,7 @@ wireguard:
   enabled: false
   port: 60273
   ipv4_cidr: 10.66.66.0/24
-  client_mode: full
+  client_mode: management
   ipv6_enabled: false
   endpoint: ""
   outbound_interface: ""

@@ -4,6 +4,10 @@ param(
     [string]$Secret = '',
     [string]$AiGroup = 'AI Development',
     [string]$PublicNode = 'VPS-SantaClara',
+    [string]$WireGuardNode = 'VPS-WireGuard',
+    [string]$WireGuardServer = '10.66.66.1',
+    [ValidateRange(1, 65535)]
+    [int]$WireGuardPort = 8080,
     [string]$ProbeUrl = 'https://chatgpt.com/favicon.ico',
     [ValidateRange(1, 20)]
     [int]$Samples = 3,
@@ -12,6 +16,7 @@ param(
     [string]$RuntimeConfigPath = (Join-Path $env:APPDATA 'io.github.clash-verge-rev.clash-verge-rev\clash-verge.yaml'),
     [switch]$PromptForSecret,
     [switch]$RequireController,
+    [switch]$RequireWireGuard,
     [switch]$AllowIpv6,
     [switch]$RequireTun
 )
@@ -67,6 +72,36 @@ function Write-Check {
     Write-Host ("[{0}] {1}" -f $Level, $Message)
 }
 
+function Test-WireGuardClient {
+    $tunnelService = Get-Service -Name 'WireGuardTunnel$*' -ErrorAction SilentlyContinue |
+        Where-Object Status -eq 'Running' |
+        Select-Object -First 1
+    if ($null -eq $tunnelService) {
+        $failures.Add('No running WireGuard tunnel service was found.')
+    }
+    else {
+        Write-Check 'PASS' "WireGuard tunnel service '$($tunnelService.Name)' is running."
+    }
+
+    $tunnelAdapter = Get-NetAdapter -ErrorAction SilentlyContinue |
+        Where-Object { $_.Status -eq 'Up' -and $_.InterfaceDescription -match 'WireGuard|Wintun' } |
+        Select-Object -First 1
+    if ($null -eq $tunnelAdapter) {
+        $failures.Add('No active WireGuard/Wintun adapter was found.')
+    }
+    else {
+        Write-Check 'PASS' "WireGuard adapter '$($tunnelAdapter.Name)' is up."
+    }
+
+    $privateEndpointReachable = Test-NetConnection -ComputerName $WireGuardServer -Port $WireGuardPort -InformationLevel Quiet -WarningAction SilentlyContinue
+    if (-not $privateEndpointReachable) {
+        $failures.Add("WireGuard private proxy endpoint ${WireGuardServer}:${WireGuardPort} is unreachable.")
+    }
+    else {
+        Write-Check 'PASS' "WireGuard private proxy endpoint ${WireGuardServer}:${WireGuardPort} is reachable."
+    }
+}
+
 function Test-MihomoRuntimeFile {
     if (-not (Test-Path -LiteralPath $RuntimeConfigPath -PathType Leaf)) {
         throw "Runtime config file does not exist: $RuntimeConfigPath"
@@ -108,6 +143,25 @@ function Test-MihomoRuntimeFile {
         if ($groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($PublicNode))[ `t]*$") {
             $failures.Add("Public fallback node '$PublicNode' is missing from '$AiGroup'.")
         }
+        if ($RequireWireGuard -and $groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($WireGuardNode))[ `t]*$") {
+            $failures.Add("WireGuard node '$WireGuardNode' is missing from '$AiGroup'.")
+        }
+    }
+
+    if ($RequireWireGuard) {
+        $escapedWireGuardNode = [Regex]::Escape($WireGuardNode)
+        $wireGuardServerPattern = '(?m)^[ \t]*server:[ \t]*["'']?' + [Regex]::Escape($WireGuardServer) + '["'']?[ \t]*$'
+        $wireGuardNodeMatch = [Regex]::Match($runtimeText, "(?ms)^[ `t]*- name:[ `t]*[^`r`n]*$escapedWireGuardNode[^`r`n]*`r?`n.*?(?=^[ `t]*- name:|^proxy-groups:|\z)")
+        if (-not $wireGuardNodeMatch.Success) {
+            $failures.Add("WireGuard proxy '$WireGuardNode' is missing from the runtime file.")
+        }
+        elseif ($wireGuardNodeMatch.Value -notmatch $wireGuardServerPattern) {
+            $failures.Add("WireGuard proxy '$WireGuardNode' does not use private server '$WireGuardServer'.")
+        }
+        else {
+            Write-Check 'PASS' "WireGuard proxy '$WireGuardNode' uses private server '$WireGuardServer'."
+        }
+        Test-WireGuardClient
     }
 
     $runtimeTunEnabled = $runtimeText -match '(?ms)^tun:\s*`r?`n(?:(?!^[^ ]).)*?^\s+enable:\s*true\s*$'
@@ -198,6 +252,9 @@ else {
     if ($members -notcontains $PublicNode) {
         $failures.Add("Public fallback node '$PublicNode' is missing from '$AiGroup'.")
     }
+    if ($RequireWireGuard -and $members -notcontains $WireGuardNode) {
+        $failures.Add("WireGuard node '$WireGuardNode' is missing from '$AiGroup'.")
+    }
 
     $nodeResults = @{}
     foreach ($node in $members) {
@@ -246,6 +303,10 @@ else {
             $warnings.Add("Inactive optional node '$node' failed $($nodeResult.Failures)/$Samples probes; verify WireGuard if this is VPS-WireGuard.")
         }
     }
+}
+
+if ($RequireWireGuard) {
+    Test-WireGuardClient
 }
 
 foreach ($warning in $warnings) { Write-Check 'WARN' $warning }

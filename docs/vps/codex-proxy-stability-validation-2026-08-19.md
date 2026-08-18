@@ -1,133 +1,149 @@
-# Codex 代理稳定性修复与验证报告
+# Codex 代理稳定性修复与 WireGuard 验证报告
 
-验证时间：2026-08-18 23:49 至 2026-08-19 00:26（Asia/Shanghai）
+验证时间：2026-08-18 23:49 至 2026-08-19 01:50（Asia/Shanghai）
 
-## 结论
+## 最终结论
 
-本次问题由配置链路中的多个偏差共同放大，不是单一的 VPS 出口网络故障：
+本轮已将 Windows WireGuard 私网入口正式接入 Clash Verge 的 AI fallback 组，并完成私网优先、公网回退、恢复私网三段实测。当前架构不是“所有流量都走 WireGuard”，而是有意采用分流：
 
-1. `D:\vps\company-vps.yaml` 已更新，但 Clash Verge 当前 Profile 仍是旧副本，源文件和实际运行配置不一致。
-2. sing-box 服务端 multiplex 使用 `padding: true`，客户端候选配置使用 `padding: false`。sing-box 文档明确说明，服务端启用 padding 后会拒绝未 padding 的 multiplex 连接。
-3. VPS 没有 IPv6 默认路由，但 sing-box 未限制域名解析策略；日志中存在 IPv6 目标的 `cannot assign requested address`。
-4. WireGuard 只在 VPS 端存在，Windows 没有对应客户端服务、私网路由或近期握手，不能作为可用代理入口。
-5. Clash Verge 2.5.2 的应用级设置覆盖了 Profile：实际端口为 7897、IPv6 原为启用、TUN 为关闭，而且新版使用命名管道而非默认 REST Controller。
-6. 对 Codex 长流式请求启用 `h2mux` 后延迟更低，但观察到模型刷新超时、WebSocket 建连失败和响应重试。回退普通 Shadowsocks TCP 后，硬错误消失，因此最终以稳定性优先，不启用客户端 `smux`。
+1. WireGuard 的 `AllowedIPs` 为 `10.66.66.0/24`，只承载 VPS 私网段。
+2. Clash 根据域名规则接管 AI 流量，再把 Shadowsocks 连接发往 `10.66.66.1:8080`。
+3. 私网入口异常时，Clash 自动改走同一 sing-box 服务的公网 Shadowsocks 入口。
+4. 其余 Windows 流量不因 WireGuard 启动而自动进入隧道；是否经过 Clash 由系统代理和应用代理行为决定。
 
-最终状态：服务端配置有效且服务正常；客户端实际运行配置与源 Profile 一致；Codex 已确认连接本机 7897；WireGuard 不参与 AI 路由；端到端探测全部成功。当前方案是本次环境中“经过验证的稳定性最优解”，不是理论上的最低单请求延迟配置。
+因此，Clash 中的 `VPS-WireGuard` 仍然是 Shadowsocks 节点。它使用的是 Shadowsocks 2022 密码，不是 WireGuard 私钥、Peer 公钥或 PresharedKey。它与 `VPS-SantaClara` 密码相同是正确设计，因为两者连接同一个 sing-box 入站；两者的 `server` 必须不同：前者是 `10.66.66.1`，后者是 VPS 公网入口。
 
-## 已实施变更
+本次综合评分：**8.7 / 10**。以中低价海外 VPS 作为个人 AI 开发代理的定位看，当前可用性和容灾已经达到较好水平；主要扣分来自跨境 TTFB、UFW 未启用，以及 Clash Verge 2.5.2 的 REST Controller 不可用导致观测能力有限。
 
-### 服务端 sing-box
+## 根因与处理
 
-- 保留 Shadowsocks 2022 TCP-only。
-- multiplex 入站保持启用，以兼容支持该能力的客户端。
-- `padding` 固定为 `false`，允许普通 TCP 和非 padding multiplex 客户端。
-- DNS 与默认域名解析策略固定为 `ipv4_only`，与 VPS 的实际路由能力一致。
-- 配置经 `sing-box check` 验证后重启服务。
-- 变更前配置备份：`/etc/sing-box/config.json.pre-codex-stability-20260818T154950`。
+| 根因或偏差 | 影响 | 处理结果 |
+| --- | --- | --- |
+| `company-vps.yaml` 与 Clash 活动 Profile 不一致 | 修改未真正生效 | 已部署到活动 Profile；最终 SHA-256 一致 |
+| WireGuard 隧道服务曾运行但适配器消失 | 私网节点不可达，表现为偶发超时 | 重装单条隧道服务；服务 Running、适配器 Up、私网 8080 可达 |
+| Windows 客户端源配置缺少 Keepalive | NAT 空闲后可能断握手 | 加入 `PersistentKeepalive = 25` 并通过服务重装加载 |
+| P0 默认 `client_mode: full` 与 AI 管理分流目标矛盾 | 可能误把全机流量导入 WireGuard，破坏公网 fallback 独立性 | 默认改为 `management`，只生成 `10.66.66.0/24`；`full` 仍可显式选择 |
+| P0 运行时检查器只看 Clash，未要求 WG 服务/适配器/私网端口 | 配置正确但隧道假活无法被发现 | 新增 `-RequireWireGuard`，联合检查节点地址、服务、适配器和 TCP 入口 |
+| Clash Verge 重启后 Windows 注册表系统代理漂移为关闭 | Codex 自身可用，但浏览器/ChatGPT 可能绕过代理 | 已核对代理地址并恢复 `ProxyEnable=1`，目标为 `127.0.0.1:7897` |
+| 旧方案 h2mux 对长流连接产生硬错误 | 模型刷新、WebSocket、流式响应不稳定 | 继续使用普通 Shadowsocks TCP，客户端禁止 `smux/h2mux` |
+| VPS 无可用 IPv6 出口但旧配置会尝试 IPv6 | `cannot assign requested address` | 保持服务端解析与路由 IPv4-only，客户端 `ipv6: false` |
+
+## 当前有效配置
+
+### Windows WireGuard
+
+| 项目 | 实际状态 |
+| --- | --- |
+| Manager 服务 | Running / Automatic |
+| `WireGuardTunnel$tu-company-win` | Running / Automatic |
+| 隧道适配器 | `tu-company-win` / Up |
+| 客户端地址 | `10.66.66.2/32`，另保留配置中的 IPv6 地址 |
+| `AllowedIPs` | `10.66.66.0/24`，管理分流模式 |
+| `PersistentKeepalive` | 配置源为 25 秒，已通过隧道服务重装加载 |
+| VPS 私网代理入口 | `10.66.66.1:8080` 可达 |
+
+`wg.exe show` 的详细运行态在当前 Windows 会话中返回 Access Denied，因此没有把“内核读回 Keepalive”伪报为已验证；已验证的是配置值、官方服务重装流程和重装后的端到端可达性。
 
 ### Clash Verge Rev 2.5.2
 
-- 将 `D:\vps\company-vps.yaml` 部署到当前 Profile，而不是只修改未加载的源文件。
-- 实际运行配置：Rule 模式、IPv6 关闭、TCP keepalive interval/idle 为 15 秒、keepalive 未禁用。
-- AI 组不含 `DIRECT`，当前只选择公网 Shadowsocks 节点。
-- WireGuard 节点定义仍可保留供以后恢复，但不在 AI 组成员中，不会被选择或参与健康检查。
-- 客户端不启用 `smux/h2mux`，避免一个复用连接迁移同时影响模型刷新、WebSocket 和流式响应。
-- TUN 保持关闭，使用 Clash Verge 系统代理；运行时连接表确认 `codex`、ChatGPT 和 Chrome 均连接本机 7897。
-- 最终 Profile 变更前备份：`LFQTUtILnNvE.yaml.pre-no-smux-20260819T000937`。
-
-### 仓库防回归
-
-- 模板和生成器支持仅在 WireGuard 实际启用时生成 WG 节点。
-- sing-box 安装脚本写入 IPv4 resolver 和兼容的 multiplex/padding 配置。
-- `doctor.sh` 增加 multiplex、padding、DNS 与 route 稳定性检查。
-- Clash 运行时检查器支持 REST Controller；Controller 不可用时，安全回退检查 Clash Verge 合并后的 `clash-verge.yaml`，不读取或输出节点密码。
-- 测试阻止 Codex Profile 再次启用 `smux/h2mux`。
-
-## WireGuard 判定
-
-| 检查项 | 结果 |
+| 项目 | 实际状态 |
 | --- | --- |
-| Windows WireGuard 应用/服务 | 未安装或未运行 |
-| Windows 私网路由 | 不存在 |
-| 私网代理入口 | 不可达 |
-| VPS `wg0` | 已启动 |
-| VPS peer 最近握手 | 约 15.2 天前 |
-| 最终 AI 路由 | 仅公网 Shadowsocks |
-
-结论：当前 WireGuard 不是一条可用客户端链路。把它放进 fallback 只会引入失败探测和切换延迟，因此已从实际 AI 组中排除。将来只有在 Windows WireGuard 安装完成、出现近期握手并通过私网 8080 探测后，才应重新加入。
-
-## 测试结果
-
-### 服务端
-
-| 项目 | 结果 |
-| --- | --- |
-| `systemctl is-active sing-box` | active |
-| `sing-box check` | pass |
-| 服务端直连 ChatGPT IPv4 | 10/10 成功，75.8–100.8 ms |
-| 重启后 IPv6 `cannot assign requested address` | 0 |
-| 客户端复测期间 dial/route/timeout/reset/multiplex 错误 | 0 |
-
-复测期间 systemd 记录过 1 条孤立 ERROR，但它不属于 dial、route、IPv6、timeout、reset、TCP read/write 或 multiplex 类别，也没有对应的客户端探测失败。报告不把它解释为已证明的代理故障；公网端口可能持续收到非代理协议探测，应结合后续日志趋势观察。
-
-### 客户端运行时
-
-| 项目 | 结果 |
-| --- | --- |
-| Profile 源文件与活动文件 SHA-256 | 一致 |
-| Mihomo 配置检查 | pass |
 | mixed port | 7897，监听正常 |
-| Rule / IPv6 / keepalive | rule / false / 15s |
+| 模式 | Rule |
+| IPv6 | false |
+| TUN | 关闭 |
+| Windows 系统代理 | 已启用，`127.0.0.1:7897` |
 | 客户端 `smux` | 未启用 |
+| AI 组 | fallback；`VPS-WireGuard` 在前，`VPS-SantaClara` 在后 |
 | AI 组 `DIRECT` | 不存在 |
-| AI 组 WireGuard 成员 | 不存在 |
-| Codex 是否实际连接 7897 | 是 |
+| 健康检查 | 60 秒、超时 8 秒、最多失败 2 次、接受 HTTP 200-499 |
+| 源文件与活动 Profile | SHA-256 一致 |
 
-### 端到端代理探测
+当前 Codex 进程存在到 7897 的 Established 连接；私网正常时，Mihomo 存在到 `10.66.66.1:8080` 的 Established 连接。这两项共同证明业务流量实际经过 Clash 和 WireGuard 私网入口。
 
-普通 Shadowsocks TCP 最终配置：
+### VPS
 
-| 目标 | 成功率 | 预期状态 | 平均 | P95 | 最大 |
+| 项目 | 实际状态 |
+| --- | --- |
+| sing-box | active；`sing-box check` 通过 |
+| `wg-quick@wg0` | active |
+| WireGuard 最近握手 | 检查时约 76 秒前 |
+| TCP 8080 | 正在监听 |
+| sing-box 模式 | Shadowsocks 2022、TCP-only、普通 TCP 优先 |
+| 最近 30 分钟日志聚合 | 2 行命中 error/timeout；期间执行过故障注入 |
+| UFW | inactive |
+
+没有导出具体 sing-box 日志原文，因为连接日志可能携带端点信息。现有聚合无法证明两行一定属于故障注入，因此把它保留为观察项，而不是宣称为零错误。
+
+## 端到端测试
+
+### WireGuard 私网路径
+
+| 目标 | 成功率 | 预期探测状态 | 平均 | P95 | 最大 |
 | --- | ---: | --- | ---: | ---: | ---: |
-| ChatGPT favicon | 30/30 | 403 | 658 ms | 1112 ms | 1293 ms |
-| Codex backend 路由 | 10/10 | 405 | 685 ms | 1363 ms | 1363 ms |
-| OpenAI API | 10/10 | 401 | 677 ms | 834 ms | 834 ms |
+| ChatGPT favicon | 30/30 | 403 | 553 ms | 569 ms | 569 ms |
+| Codex backend 路由 | 10/10 | 405 | 600 ms | 640 ms | 640 ms |
+| OpenAI API | 10/10 | 401 | 726 ms | 1848 ms | 1848 ms |
 
-这些 401/403/405 是未携带业务认证或使用探测方法时的预期应用状态；它们证明 DNS、TCP、Shadowsocks、TLS 和目标路由已完整建立，不代表业务认证失败。
+这些 401/403/405 是无业务认证或探测方法不匹配时的预期应用状态；它们证明 DNS、TCP、Shadowsocks、TLS 和目标路由已建立，不是业务请求失败。50 次测试均未发生连接级失败。
 
-### h2mux A/B 结论
+### 公网 fallback 与恢复
 
-`h2mux` 的 30 次 ChatGPT 探测平均约 461 ms、P95 约 737 ms，明显低于普通 TCP；但同一观察阶段出现 2 次模型刷新超时、1 次 WebSocket 建连失败，以及响应自动重试。普通 TCP 在 22.9 分钟观察中：
+为避免依赖受 Windows ACL 限制的服务停止操作，本次只对活动 Clash Profile 做了可回滚故障注入：临时将 WireGuard 节点指向不可达的同网段地址，P0 源文件和 WireGuard 服务不变。
 
-- 模型刷新 ERROR：0
-- WebSocket ERROR：0
-- 全部 Codex ERROR：0
-- 流读取自动重试日志：28 条；均被客户端恢复，当前任务没有终止或丢失响应
+| 检查 | 结果 |
+| --- | --- |
+| 私网节点故障后自动切公网 | 通过 |
+| 切换耗时 | 11.8 秒 |
+| fallback 期间 ChatGPT | 可达，HTTP 403 |
+| Mihomo 公网 Shadowsocks 连接 | 26 条 Established |
+| 恢复原配置和重启 | 通过 |
+| 恢复后私网 Shadowsocks 连接 | 5 条 Established |
+| 临时故障配置 | 已删除，不可恢复但原配置已从备份恢复 |
 
-因此没有为了约 200 ms 的探测延迟收益保留 h2mux。当前剩余的流读取重试没有对应服务端网络错误，可能包含 Codex/OpenAI 应用层或公网瞬时抖动，不能仅凭本次证据归因于 VPS。
+该结果验证的是 Clash 节点故障的自动回退能力。由于当前会话无法停止 WireGuard 隧道服务，没有声称完成“真实卸载网卡”的破坏性演练；从 Clash 视角，两种故障都表现为私网 Shadowsocks 入口不可达。
+
+## P0 代码调整
+
+- `vps-init/config/vps.example.yaml`：WireGuard 默认模式改为 `management`。
+- `vps-init/lib/config.sh`：默认 AllowedIPs 改为 VPS 私网段；保留显式 `full` 模式。
+- `vps-init/README.md`：说明分流与公网 fallback 的关系。
+- `vps-init/scripts/check-clash-runtime.ps1`：新增 `-RequireWireGuard` 及服务、适配器、私网 TCP 入口检查。
+- `vps-init/tests/test-config.sh`：覆盖默认 management、显式 full 和非法模式。
+- `vps-init/tests/test-security-contract.sh`：锁定 WireGuard 强制检查契约。
 
 ## 自动化验证
 
-- `vps-init/tests/test-*.sh`：8/8 通过。
+- `vps-init/tests/run.sh`：8/8 通过。
 - 修改脚本 `bash -n`：通过。
-- 修改脚本 ShellCheck：通过。
+- ShellCheck：通过。
 - PowerShell 运行时检查器语法解析：通过。
-- PowerShell 运行时检查器在 Clash Verge 2.5.2 命名管道模式：通过。
+- `check-clash-runtime.ps1 -RequireWireGuard`：通过。
+- Mihomo 对 `D:\vps\company-vps.yaml` 的配置检查：通过。
 - `git diff --check`：通过。
 
-## 剩余边界与建议
+## 评分
 
-1. VPS 的 UFW 当前未启用。这是安全暴露面，不是本次延迟根因；未经单独防锁死方案验证，不在本次变更中直接开启。
-2. BBR 未启用。VPS 出口测试稳定，当前没有证据证明切换内核拥塞控制能改善 Codex 长流，因此不做系统级实验性变更。
-3. TUN 当前关闭。Codex 已被实测走系统代理；若未来出现某个应用绕过系统代理，再单独启用并验证 TUN，而不是为了本次问题增加接管复杂度。
-4. 若要恢复 WireGuard，必须先完成 Windows 客户端安装、近期握手、路由和私网代理探测四项验收。
-5. 代理无法保证消除 OpenAI 服务端或公网的所有短时重试；验收目标是消除配置性失败、保证重试可恢复并避免终端失败。
+| 维度 | 权重 | 得分 | 说明 |
+| --- | ---: | ---: | --- |
+| 可用性与容灾 | 30% | 9.2 | 私网优先、公网回退和恢复均有实测证据 |
+| 长连接稳定性 | 20% | 8.9 | 普通 SS TCP、TCP-only、Keepalive 25、无 smux |
+| 延迟与抖动 | 20% | 8.1 | ChatGPT/Codex P95 约 0.57/0.64 秒；OpenAI API 有一次 1.85 秒长尾 |
+| 配置一致性 | 15% | 9.4 | 源、活动 Profile、运行时和 P0 防回归已对齐 |
+| 安全性 | 10% | 7.0 | 密钥边界正确，但 UFW inactive，公网 8080 为 fallback 保持开放 |
+| 可观测性 | 5% | 7.6 | 自动检查已增强，但 REST Controller 不可用且详细 WG 状态受 ACL 限制 |
+| **加权总分** | **100%** | **8.7** | 适合作为个人 AI 开发代理的稳定主链路 |
+
+## 剩余风险与后续建议
+
+1. 为 VPS 制定防锁死规则后启用 UFW：至少先确认 SSH、WireGuard UDP 端口和公网 Shadowsocks fallback TCP 端口均被允许，再启用防火墙。
+2. 保持 WireGuard `management` 模式。只有明确要让全机默认流量走隧道、并另外设计公网 fallback 时，才切换 `full`。
+3. TUN 当前不必开启：Codex 已实测跟随 7897，系统代理也已恢复。若某个具体应用绕过系统代理，再针对该应用评估 TUN。
+4. 继续观察 sing-box 的 error/timeout 聚合趋势；若在没有故障演练时持续增加，再在 VPS 本地脱敏归类。
+5. 不要在 Clash 的 `VPS-WireGuard` 节点中填写 WireGuard 密钥。该字段始终是 sing-box Shadowsocks 2022 密码。
 
 ## 参考
 
+- WireGuard for Windows enterprise/service lifecycle：<https://git.zx2c4.com/wireguard-windows/about/docs/enterprise.md>
 - sing-box multiplex：<https://sing-box.sagernet.org/configuration/shared/multiplex/>
 - sing-box Shadowsocks inbound：<https://sing-box.sagernet.org/configuration/inbound/shadowsocks/>
-- sing-box dial / resolver：<https://sing-box.sagernet.org/configuration/shared/dial/>
-- Mihomo general configuration：<https://wiki.metacubex.one/en/config/general/>
-- OpenAI Codex configuration reference：<https://learn.chatgpt.com/docs/config-file/config-reference>

@@ -42,15 +42,15 @@ cp config/vps.example.yaml config/vps.local.yaml
 - `ssh.port`：Secure 完成后的 SSH 端口。
 - `ssh.admin_authorized_keys_path`：Secure 使用的非 root 管理员公钥文件。
 - `wireguard.enabled`：只控制 Quick 是否安装 WG；Secure 会忽略 `false` 并固定安装。
-- `wireguard.client_mode`：`full` 生成 `AllowedIPs = 0.0.0.0/0`；`management` 只路由 WG 私网 CIDR。
+- `wireguard.client_mode`：默认 `management`，只路由 WG 私网 CIDR；显式使用 `full` 才生成 `AllowedIPs = 0.0.0.0/0`。
 - `clash_remote.enabled`：是否启用 WG 私网 Remote Profile。
 
-旧配置无需迁移：新增字段均有兼容默认值。
+旧配置无需结构迁移；若旧文件省略 `wireguard.client_mode`，现在会按更安全的 `management` 处理。确实需要全隧道的旧环境应显式补上 `client_mode: full`。
 
 ```yaml
 wireguard:
   enabled: false
-  client_mode: full # full | management
+  client_mode: management # management | full
 
 clash_remote:
   enabled: false
@@ -88,7 +88,7 @@ clash_remote:
 sudo ./scripts/wg-add-client.sh laptop
 ```
 
-`client_mode: full` 适合希望客户端全量流量进入 WG 的情况；只为了访问私网订阅和 AI 私网入口时建议使用 `management`。生成的 `🤖 AI Development` 组会优先使用 `VPS-WireGuard (10.66.66.1)`，私网探测失败时自动回退 `VPS-SantaClara` 公网入口。
+`client_mode: full` 只适合明确希望客户端全量流量进入 WG 的情况；默认 `management` 用于访问私网订阅和 AI 私网入口，避免公网 fallback 也被 WG 默认路由包住。生成的 `🤖 AI Development` 组会优先使用 `VPS-WireGuard (10.66.66.1)`，私网探测失败时自动回退 `VPS-SantaClara` 公网入口。
 
 ### C. Quick + WG + Remote
 
