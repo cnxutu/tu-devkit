@@ -53,6 +53,18 @@ if ($Secret) {
 $requestTimeoutSeconds = [Math]::Max(3, [Math]::Ceiling($TimeoutMilliseconds / 1000) + 2)
 $failures = [System.Collections.Generic.List[string]]::new()
 $warnings = [System.Collections.Generic.List[string]]::new()
+$requiredTunExclusions = @(
+    '10.0.0.0/8',
+    '100.64.0.0/10',
+    '127.0.0.0/8',
+    '169.254.0.0/16',
+    '172.16.0.0/12',
+    '192.168.0.0/16',
+    '224.0.0.0/4',
+    '::1/128',
+    'fc00::/7',
+    'fe80::/10'
+)
 
 function Get-PropertyValue {
     param([object]$Object, [string]$Name)
@@ -137,20 +149,20 @@ function Test-MihomoRuntimeFile {
     }
     else {
         $groupText = $groupMatch.Value
-        if ($groupText -match '(?m)^[ \t]*-[ \t]*DIRECT[ \t]*$') {
+        if ($groupText -match '(?m)^[ \t]*-[ \t]*DIRECT[ \t]*\r?$') {
             $failures.Add("Proxy group '$AiGroup' contains DIRECT and can bypass the VPS.")
         }
-        if ($groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($PublicNode))[ `t]*$") {
+        if ($groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($PublicNode))[ `t]*`r?$") {
             $failures.Add("Public fallback node '$PublicNode' is missing from '$AiGroup'.")
         }
-        if ($RequireWireGuard -and $groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($WireGuardNode))[ `t]*$") {
+        if ($RequireWireGuard -and $groupText -notmatch "(?m)^[ `t]*-[ `t]*$([Regex]::Escape($WireGuardNode))[ `t]*`r?$") {
             $failures.Add("WireGuard node '$WireGuardNode' is missing from '$AiGroup'.")
         }
     }
 
     if ($RequireWireGuard) {
         $escapedWireGuardNode = [Regex]::Escape($WireGuardNode)
-        $wireGuardServerPattern = '(?m)^[ \t]*server:[ \t]*["'']?' + [Regex]::Escape($WireGuardServer) + '["'']?[ \t]*$'
+        $wireGuardServerPattern = '(?m)^[ \t]*server:[ \t]*["'']?' + [Regex]::Escape($WireGuardServer) + '["'']?[ \t]*\r?$'
         $wireGuardNodeMatch = [Regex]::Match($runtimeText, "(?ms)^[ `t]*- name:[ `t]*[^`r`n]*$escapedWireGuardNode[^`r`n]*`r?`n.*?(?=^[ `t]*- name:|^proxy-groups:|\z)")
         if (-not $wireGuardNodeMatch.Success) {
             $failures.Add("WireGuard proxy '$WireGuardNode' is missing from the runtime file.")
@@ -164,12 +176,22 @@ function Test-MihomoRuntimeFile {
         Test-WireGuardClient
     }
 
-    $runtimeTunEnabled = $runtimeText -match '(?ms)^tun:\s*`r?`n(?:(?!^[^ ]).)*?^\s+enable:\s*true\s*$'
+    $tunBlockMatch = [Regex]::Match($runtimeText, '(?ms)^tun:\s*\r?\n(?:(?!^[^ \t\r\n]).)*(?=^[^ \t\r\n]|\z)')
+    $tunBlockText = if ($tunBlockMatch.Success) { $tunBlockMatch.Value } else { '' }
+    $runtimeTunEnabled = $tunBlockText -match '(?m)^\s+enable:\s*true\s*$'
     if ($RequireTun -and -not $runtimeTunEnabled) {
         $failures.Add('Runtime file has TUN disabled even though -RequireTun was requested.')
     }
     elseif (-not $runtimeTunEnabled) {
         $warnings.Add('Runtime file has TUN disabled. This is valid only when Codex/ChatGPT reliably follow the system proxy.')
+    }
+    elseif ($RequireTun) {
+        foreach ($excludedAddress in $requiredTunExclusions) {
+            $addressPattern = '(?m)^\s+-\s*["'']?' + [Regex]::Escape($excludedAddress) + '["'']?\s*$'
+            if ($tunBlockText -notmatch $addressPattern) {
+                $failures.Add("Runtime TUN route exclusions are missing '$excludedAddress'.")
+            }
+        }
     }
 
     $warnings.Add('Mihomo is using a named pipe or its REST controller is unavailable; delay probes were skipped. Use -RequireController after enabling a loopback controller to require API checks.')
@@ -232,6 +254,12 @@ else {
         $strictRoute = [bool](Get-PropertyValue $tun 'strict-route')
         if (-not $strictRoute) {
             $failures.Add('Runtime TUN strict-route is disabled.')
+        }
+        $routeExclusions = @((Get-PropertyValue $tun 'route-exclude-address'))
+        foreach ($excludedAddress in $requiredTunExclusions) {
+            if ($routeExclusions -notcontains $excludedAddress) {
+                $failures.Add("Runtime TUN route exclusions are missing '$excludedAddress'.")
+            }
         }
     }
 }

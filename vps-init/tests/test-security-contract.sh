@@ -45,6 +45,18 @@ grep -Fq "contains DIRECT and can bypass the VPS" "$ROOT/scripts/check-clash-run
 grep -Fq "[switch]\$RequireWireGuard" "$ROOT/scripts/check-clash-runtime.ps1"
 grep -Fq "WireGuard private proxy endpoint" "$ROOT/scripts/check-clash-runtime.ps1"
 grep -Fq "does not use private server" "$ROOT/scripts/check-clash-runtime.ps1"
+grep -Fq "Runtime TUN route exclusions are missing" "$ROOT/scripts/check-clash-runtime.ps1"
+grep -Fq '  route-exclude-address:' "$ROOT/config/clash-verge-profile.template.yaml"
+wireguard_template="$ROOT/config/wireguard-client.example.conf"
+grep -Fqx 'PrivateKey = <CLIENT_PRIVATE_KEY>' "$wireguard_template"
+grep -Fqx 'PublicKey = <SERVER_PUBLIC_KEY>' "$wireguard_template"
+grep -Fqx 'PresharedKey = <PRESHARED_KEY>' "$wireguard_template"
+grep -Fqx 'Endpoint = <VPS_PUBLIC_HOST>:<WIREGUARD_UDP_PORT>' "$wireguard_template"
+grep -Fqx 'AllowedIPs = 10.66.66.0/24' "$wireguard_template"
+if grep -Fq 'AllowedIPs = 0.0.0.0/0' "$wireguard_template"; then
+  echo 'WireGuard example must not enable a full-tunnel route' >&2
+  exit 1
+fi
 grep -Fq "  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'" "$ROOT/config/clash-verge-profile.template.yaml"
 grep -Fq '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$ROOT/config/clash-verge-profile.template.yaml"
 steam_cdn_line="$(grep -nF '  - DOMAIN-SUFFIX,steamstatic.com,🎮 Steam CDN' "$ROOT/config/clash-verge-profile.template.yaml" | cut -d: -f1)"

@@ -1,4 +1,6 @@
 vps.local.yaml
+config/*.conf
+!config/*.example.conf
 .env
 output/
 logs/

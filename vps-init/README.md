@@ -88,7 +88,11 @@ clash_remote:
 sudo ./scripts/wg-add-client.sh laptop
 ```
 
+Windows 手工配置可从 [`config/wireguard-client.example.conf`](config/wireguard-client.example.conf) 复制到仓库外，只替换客户端私钥、服务端公钥、PresharedKey、VPS 公网地址和 WireGuard UDP 端口。模板固定保留 `AllowedIPs = 10.66.66.0/24`，且默认不设置 DNS/IPv6，避免再次触发全隧道 kill switch 或把 DNS 指向尚未验证的私网服务。`config/*.conf` 默认忽略，只有脱敏的 `*.example.conf` 允许提交。
+
 `client_mode: full` 只适合明确希望客户端全量流量进入 WG 的情况；默认 `management` 用于访问私网订阅和 AI 私网入口，避免公网 fallback 也被 WG 默认路由包住。生成的 `🤖 AI Development` 组会优先使用 `VPS-WireGuard (10.66.66.1)`，私网探测失败时自动回退 `VPS-SantaClara` 公网入口。
+
+Clash Profile 的 TUN 会在系统路由层排除 RFC 1918、CGNAT、链路本地、组播和 IPv6 本地网段；这与后续的私网 `DIRECT` 规则作用层次不同。前者保证局域网和 WG 私网不被 TUN 接管，后者保证这些流量进入 Mihomo 时仍不会选择代理节点。
 
 ### C. Quick + WG + Remote
 

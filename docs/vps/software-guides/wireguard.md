@@ -175,10 +175,11 @@ Manager 服务负责托盘 UI 与隧道管理；每个已安装隧道有独立 T
 ### GUI 使用
 
 1. 安装并启动 WireGuard。
-2. 选择“从文件导入隧道”，导入受控传输得到的 `.conf`。
-3. 核对隧道名称、Address、Endpoint 和 `AllowedIPs`，不要在截图中显示密钥。
-4. 激活隧道，确认“最新握手”和收发字节持续更新。
-5. 分流场景验证私网地址；全隧道场景额外验证公网出口、DNS 和 IPv6 行为。
+2. 可从 [`vps-init/config/wireguard-client.example.conf`](../../../vps-init/config/wireguard-client.example.conf) 复制脱敏模板到仓库外，只替换其中五个占位符；或使用受控传输得到的 `.conf`。
+3. 选择“从文件导入隧道”，导入完成后的 `.conf`。
+4. 核对隧道名称、Address、Endpoint 和 `AllowedIPs`，不要在截图中显示密钥。
+5. 激活隧道，确认“最新握手”和收发字节持续更新。
+6. 分流场景验证私网地址；全隧道场景额外验证公网出口、DNS 和 IPv6 行为。
 
 ### PowerShell 核对
 
@@ -215,7 +216,9 @@ Test-NetConnection <WIREGUARD_PRIVATE_SERVER> -Port <PRIVATE_SERVICE_PORT>
 
 - `AllowedIPs = 10.66.66.0/24` 是分流，不会让所有互联网流量进入隧道。
 - `AllowedIPs = 0.0.0.0/0` 只覆盖 IPv4；若系统仍有 IPv6，必须单独设计 IPv6 路由和泄漏边界。
-- WireGuard 没有“登录密码”。不要把 WireGuard 私钥或 PresharedKey填入 Clash 的 Shadowsocks `password`。
+- WireGuard for Windows 在单 Peer 配置包含 `/0` 时会启用阻止隧道外流量的 kill switch；即使本机仍有更具体的局域网路由，防火墙也可能阻止访问局域网。只需要 VPS 私网和 AI 私网入口时使用 `AllowedIPs = 10.66.66.0/24`。
+- Windows 导入 `.conf` 后会把配置保存到受保护的 DPAPI 配置库。之后修改原始 `.conf` 不会自动更新正在运行的 Tunnel Service；需要在确认备份后删除旧隧道并重新导入，或使用官方 `/uninstalltunnelservice`、`/installtunnelservice` 命令替换服务。
+- WireGuard 没有“登录密码”。不要把 WireGuard 私钥或 PresharedKey 填入 Clash 的 Shadowsocks `password`。
 - 能 ping 通 Peer 不代表 sing-box 端口正常；反过来，公网代理正常也不代表 WireGuard 已握手。
 
 ## 7. 本项目入口
@@ -223,5 +226,6 @@ Test-NetConnection <WIREGUARD_PRIVATE_SERVER> -Port <PRIVATE_SERVICE_PORT>
 - 安装实现：[`vps-init/scripts/wireguard.sh`](../../../vps-init/scripts/wireguard.sh)
 - 添加客户端：[`vps-init/scripts/wg-add-client.sh`](../../../vps-init/scripts/wg-add-client.sh)
 - 配置默认值：[`vps-init/config/vps.example.yaml`](../../../vps-init/config/vps.example.yaml)
+- Windows 客户端脱敏模板：[`vps-init/config/wireguard-client.example.conf`](../../../vps-init/config/wireguard-client.example.conf)
 - 当前数据流：[VPS 网络架构](../architecture.md)
 - 联合验收：[联合架构与运维手册](combined-stack-operations.md)
