@@ -4,6 +4,7 @@
 
 - [初始化教程](initialization-guide.md)：四条可直接执行的完整路径。
 - [Remote Profile 教程](clash-remote-profile.md)：通过 WireGuard 私网订阅 Clash 配置。
+- [极简 sing-box 本地 Profile](clash-verge-minimal-sing-box-profile.md)：单一公网 sing-box 节点、系统代理模式，不启用 TUN 或 WireGuard。
 - [架构说明](architecture.md)：安装状态迁移与客户端数据流。
 - [安全说明](security.md)：SSH、防火墙、密钥、订阅秘密与日志边界。
 - [WireGuard 与 sing-box 软件指南](software-guides/README.md)：软件原理、Ubuntu/Windows 安装、常用命令、适用场景及联合运维核对。
