@@ -183,6 +183,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-clash-runtime.ps1 `
 
 Clash Verge 的应用级设置可能覆盖 Profile 里的 `mixed-port` / `ipv6` / `tun`，这正是之前只检查生成 YAML 仍会漏掉运行时偏差的原因。若依赖 TUN 接管 Codex，额外传入 `-RequireTun`；否则 TUN 关闭只会警告，但必须确认 Codex 能稳定跟随系统代理。
 
+Windows 上开启 Clash Verge 的虚拟网卡后，应用级 TUN 配置还可能在 Profile/Merge 之后覆盖 `stack`、`strict-route` 和 `route-exclude-address`。因此不能只在订阅 YAML 中维护私网排除项：应在 Clash Verge 的全局 TUN 设置中同步 `mixed`、`strict-route: true` 与模板中的全部 `route-exclude-address`，随后用 `-RequireTun` 验证合并后的 `clash-verge.yaml`。
+
 回滚时先切回旧 Clash Profile；服务端脚本在 sing-box 配置校验或重启失败时会恢复上一版。
 
 ## 5. 安全与兼容边界

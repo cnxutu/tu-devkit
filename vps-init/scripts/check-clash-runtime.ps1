@@ -186,6 +186,10 @@ function Test-MihomoRuntimeFile {
         $warnings.Add('Runtime file has TUN disabled. This is valid only when Codex/ChatGPT reliably follow the system proxy.')
     }
     elseif ($RequireTun) {
+        $strictRoute = $tunBlockText -match '(?m)^\s+strict-route:\s*true\s*$'
+        if (-not $strictRoute) {
+            $failures.Add('Runtime TUN strict-route is disabled.')
+        }
         foreach ($excludedAddress in $requiredTunExclusions) {
             $addressPattern = '(?m)^\s+-\s*["'']?' + [Regex]::Escape($excludedAddress) + '["'']?\s*$'
             if ($tunBlockText -notmatch $addressPattern) {

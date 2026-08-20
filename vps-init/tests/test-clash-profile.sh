@@ -94,6 +94,22 @@ steam_web_line="$(grep -nF '  - DOMAIN-SUFFIX,steamcommunity.com,🎬 Entertainm
 }
 [[ "$(file_mode "$profile")" == 600 ]] || { echo 'Clash profile permissions must be 600' >&2; exit 1; }
 
+# The generator matches template placeholders exactly.  A Windows checkout may
+# provide CRLF input, so verify it still produces a complete Linux-style profile.
+crlf_root="$tmp/crlf-module"
+cp -R "$ROOT" "$crlf_root"
+sed -i 's/$/\r/' "$crlf_root/config/clash-verge-profile.template.yaml"
+CONFIG_FILE="$tmp/vps.local.yaml" \
+SING_BOX_ENDPOINT='192.0.2.1' \
+SING_BOX_PASSWORD_FILE="$tmp/sing-box-password" \
+VPS_INIT_OUTPUT_DIR="$tmp/output-crlf" \
+VPS_INIT_STATE_DIR="$tmp/state-crlf" \
+bash "$crlf_root/scripts/generate-clash-profile.sh" >/dev/null
+crlf_profile="$tmp/output-crlf/vps-clash.yaml"
+grep -Fq '    server: "192.0.2.1"' "$crlf_profile"
+grep -Fq '    password: "MDEyMzQ1Njc4OWFiY2RlZg=="' "$crlf_profile"
+grep -Fq '  route-exclude-address:' "$crlf_profile"
+
 sed '/^wireguard:/,/^sing_box:/ s/  enabled: false/  enabled: true/' "$tmp/vps.local.yaml" > "$tmp/vps-wg.yaml"
 CONFIG_FILE="$tmp/vps-wg.yaml" \
 SING_BOX_ENDPOINT='192.0.2.1' \

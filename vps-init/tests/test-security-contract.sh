@@ -2,6 +2,7 @@
 # shellcheck disable=SC2016 # Literal shell snippets are intentional grep patterns.
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+has_exact_line() { tr -d '\r' < "$2" | grep -Fqx "$1"; }
 grep -Fq 'vps.local.yaml' "$ROOT/.gitignore"
 grep -Fq 'output/' "$ROOT/.gitignore"
 grep -Fq 'Refusing SSH hardening' "$ROOT/scripts/ssh-hardening.sh"
@@ -48,11 +49,11 @@ grep -Fq "does not use private server" "$ROOT/scripts/check-clash-runtime.ps1"
 grep -Fq "Runtime TUN route exclusions are missing" "$ROOT/scripts/check-clash-runtime.ps1"
 grep -Fq '  route-exclude-address:' "$ROOT/config/clash-verge-profile.template.yaml"
 wireguard_template="$ROOT/config/wireguard-client.example.conf"
-grep -Fqx 'PrivateKey = <CLIENT_PRIVATE_KEY>' "$wireguard_template"
-grep -Fqx 'PublicKey = <SERVER_PUBLIC_KEY>' "$wireguard_template"
-grep -Fqx 'PresharedKey = <PRESHARED_KEY>' "$wireguard_template"
-grep -Fqx 'Endpoint = <VPS_PUBLIC_HOST>:<WIREGUARD_UDP_PORT>' "$wireguard_template"
-grep -Fqx 'AllowedIPs = 10.66.66.0/24' "$wireguard_template"
+has_exact_line 'PrivateKey = <CLIENT_PRIVATE_KEY>' "$wireguard_template"
+has_exact_line 'PublicKey = <SERVER_PUBLIC_KEY>' "$wireguard_template"
+has_exact_line 'PresharedKey = <PRESHARED_KEY>' "$wireguard_template"
+has_exact_line 'Endpoint = <VPS_PUBLIC_HOST>:<WIREGUARD_UDP_PORT>' "$wireguard_template"
+has_exact_line 'AllowedIPs = 10.66.66.0/24' "$wireguard_template"
 if grep -Fq 'AllowedIPs = 0.0.0.0/0' "$wireguard_template"; then
   echo 'WireGuard example must not enable a full-tunnel route' >&2
   exit 1

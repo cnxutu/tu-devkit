@@ -18,6 +18,9 @@ output_dir="${VPS_INIT_OUTPUT_DIR:-$ROOT/output}"; ensure_private_dir "$output_d
 output_tmp="$(mktemp "$output_dir/.vps-clash.XXXXXX")"; trap 'rm -f "$output_tmp"' EXIT
 replacements=0; in_wireguard_block=0
 while IFS= read -r line || [[ -n "$line" ]]; do
+  # The template can be checked out as CRLF on Windows.  Normalize the input
+  # before exact placeholder matching and always emit a Linux-compatible YAML.
+  line="${line//$'\r'/}"
   if [[ "$line" == *'# BEGIN_WIREGUARD_PROXY' ]]; then in_wireguard_block=1; continue; fi
   if [[ "$line" == *'# END_WIREGUARD_PROXY' ]]; then in_wireguard_block=0; continue; fi
   (( in_wireguard_block == 1 && include_wireguard == 0 )) && continue
@@ -31,6 +34,6 @@ while IFS= read -r line || [[ -n "$line" ]]; do
   esac
 done < "$template" > "$output_tmp"
 expected_replacements=4; (( include_wireguard == 1 )) && expected_replacements=8
-[[ "$replacements" == "$expected_replacements" ]] || die 'Clash profile template placeholders are incomplete.'
+[[ "$replacements" == "$expected_replacements" ]] || die "Clash profile template placeholders are incomplete (${replacements}/${expected_replacements})."
 chmod 600 "$output_tmp"; mv -f "$output_tmp" "$output"; trap - EXIT
 info "Created protected Clash profile at $output"
