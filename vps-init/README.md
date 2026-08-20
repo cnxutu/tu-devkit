@@ -168,8 +168,16 @@ Remote 检查包括 systemd 服务、私网监听、`wg0` UFW 规则、发布文
 3. 将 Clash Verge Rev 升级到计划使用的新版，连接 WireGuard（如已启用），再导入或刷新 Profile。
 4. 运行本机核验工具，确认的是 Mihomo 合并后的实际运行值，而不只是 YAML 文本。
 
+从仓库根目录运行：
+
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\check-clash-runtime.ps1
+powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.ps1 -RequireTun
+```
+
+若当前目录不是仓库根目录，使用绝对路径：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File D:\workspace\github\tu-devkit\vps-init\scripts\check-clash-runtime.ps1 -RequireTun
 ```
 
 检查器优先连接本机 `127.0.0.1:9097`。若新版 Clash Verge 仅开放命名管道而未开放 REST Controller，则自动回退读取合并后的 `clash-verge.yaml`，检查 Rule 模式、IPv6、`smux`、TUN 与 AI 组不含 `DIRECT`；静态回退不会读取或输出节点密码。若 Controller 可用，还会执行当前节点和公网回退节点的多次 ChatGPT 延迟探测。若 Controller 端口或 secret 不同：
@@ -184,6 +192,32 @@ powershell -ExecutionPolicy Bypass -File .\scripts\check-clash-runtime.ps1 `
 Clash Verge 的应用级设置可能覆盖 Profile 里的 `mixed-port` / `ipv6` / `tun`，这正是之前只检查生成 YAML 仍会漏掉运行时偏差的原因。若依赖 TUN 接管 Codex，额外传入 `-RequireTun`；否则 TUN 关闭只会警告，但必须确认 Codex 能稳定跟随系统代理。
 
 Windows 上开启 Clash Verge 的虚拟网卡后，应用级 TUN 配置还可能在 Profile/Merge 之后覆盖 `stack`、`strict-route` 和 `route-exclude-address`。因此不能只在订阅 YAML 中维护私网排除项：应在 Clash Verge 的全局 TUN 设置中同步 `mixed`、`strict-route: true` 与模板中的全部 `route-exclude-address`，随后用 `-RequireTun` 验证合并后的 `clash-verge.yaml`。不要把直接编辑应用数据目录下的 `config.yaml` 作为持久方案：Clash Verge 会按界面设置重新生成它；应通过“设置 → TUN/虚拟网卡”保存这三个值后再重载内核。
+
+### Windows Clash Verge TUN 操作与校验
+
+在 Clash Verge 打开“设置 → TUN/虚拟网卡”，按下列值保存：
+
+- TUN 模式堆栈：`Mixed`。
+- 开启“自动设置全局路由”“严格路由”“自动选择流量出口接口”。
+- DNS 劫持：`any:53`。
+- “排除自定义网段”逐项保留以下 CIDR：
+
+```text
+10.0.0.0/8
+100.64.0.0/10
+127.0.0.0/8
+169.254.0.0/16
+172.16.0.0/12
+192.168.0.0/16
+224.0.0.0/4
+::1/128
+fc00::/7
+fe80::/10
+```
+
+输入框中出现已存在的 CIDR 时不要重复“新建”。若标签显示为 `[object Object]`，它不是有效 CIDR：删除该标签，重新单独创建对应网段，并确认标签显示完整 CIDR 后再保存。保存后执行“重载配置”或“重启内核”；没有该入口时，完全退出 Clash Verge（含系统托盘）后重新打开。
+
+重启后运行前述 `-RequireTun` 命令。`Runtime file verification passed.` 表示实际合并配置符合策略；`Mihomo REST controller is unavailable` 只表示无法做 API 延迟探测，不影响静态运行态验收。若仍提示 `strict-route is disabled` 或某个 `route exclusions are missing`，回到应用级 TUN 设置修正对应项，不能只修改订阅 YAML。
 
 回滚时先切回旧 Clash Profile；服务端脚本在 sing-box 配置校验或重启失败时会恢复上一版。
 
