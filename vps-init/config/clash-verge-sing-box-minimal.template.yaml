@@ -1,0 +1,53 @@
+# Clash Verge 本地导入模板：单一 sing-box Shadowsocks 2022 节点。
+# 复制到仓库外并替换 server、port、cipher、password；完成后的文件是凭据，不得提交。
+# 这是系统代理 Profile，不启用 TUN、WireGuard、Remote Profile 或 DNS 接管。
+
+mixed-port: 7897
+allow-lan: false
+mode: rule
+log-level: warning
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+keep-alive-interval: 15
+keep-alive-idle: 15
+disable-keep-alive: false
+
+proxies:
+  - name: VPS-sing-box
+    type: ss
+    server: "<SING_BOX_PUBLIC_HOST>"
+    port: <SING_BOX_TCP_PORT>
+    cipher: 2022-blake3-aes-128-gcm
+    password: "<SING_BOX_PASSWORD>"
+    ip-version: ipv4
+    udp: false
+
+proxy-groups:
+  - name: 🚀 VPS
+    type: select
+    proxies:
+      - VPS-sing-box
+
+rules:
+  # 不让局域网、Windows 连通性探测和本机服务绕行 VPS。
+  - DOMAIN,localhost,DIRECT
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
+  - DOMAIN-SUFFIX,msftconnecttest.com,DIRECT
+  - DOMAIN-SUFFIX,msftncsi.com,DIRECT
+  - IP-CIDR,127.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,10.0.0.0/8,DIRECT,no-resolve
+  - IP-CIDR,100.64.0.0/10,DIRECT,no-resolve
+  - IP-CIDR,169.254.0.0/16,DIRECT,no-resolve
+  - IP-CIDR,172.16.0.0/12,DIRECT,no-resolve
+  - IP-CIDR,192.168.0.0/16,DIRECT,no-resolve
+  - IP-CIDR6,::1/128,DIRECT,no-resolve
+  - IP-CIDR6,fc00::/7,DIRECT,no-resolve
+  - IP-CIDR6,fe80::/10,DIRECT,no-resolve
+
+  # P0 sing-box 当前为 TCP-only；拒绝 QUIC 的 UDP/443，立即回落到 TCP。
+  - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'
+
+  # 其他经系统代理进入 Mihomo 的流量统一走 sing-box。
+  - MATCH,🚀 VPS
