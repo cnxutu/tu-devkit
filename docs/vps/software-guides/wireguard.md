@@ -204,6 +204,8 @@ Test-NetConnection <WIREGUARD_PRIVATE_SERVER> -Port <PRIVATE_SERVICE_PORT>
 
 ## 6. 排错顺序
 
+遇到“Windows GUI 已连接但没有近期握手、接收为零”时，直接使用 [WireGuard 快速排查手册](wireguard-fast-troubleshooting.md)。它给出两端抓包、单向 UDP 回程判定、端口迁移门禁和 AI 交接模板。
+
 1. 确认两端时间正确、UDP 端口已被云安全组和主机防火墙允许。
 2. 确认服务端 `wg0` 接口存在，Windows Tunnel Service 与适配器均正常。
 3. 检查 Endpoint 是否可解析和可达，Peer 公钥是否配对。
@@ -229,3 +231,5 @@ Test-NetConnection <WIREGUARD_PRIVATE_SERVER> -Port <PRIVATE_SERVICE_PORT>
 - Windows 客户端脱敏模板：[`vps-init/config/wireguard-client.example.conf`](../../../vps-init/config/wireguard-client.example.conf)
 - 当前数据流：[VPS 网络架构](../architecture.md)
 - 联合验收：[联合架构与运维手册](combined-stack-operations.md)
+- 无握手快速定位：[WireGuard 快速排查手册](wireguard-fast-troubleshooting.md)
+- 实际故障证据：[2026-08-22 WireGuard 连接故障复盘](../wireguard-connectivity-incident-2026-08-22.md)

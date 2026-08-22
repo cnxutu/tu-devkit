@@ -96,6 +96,8 @@ powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.
 
 出现“配置文件正确但业务不通”时，优先使用实际链路证据：Windows 代理状态、本地监听、WireGuard 握手、私网 TCP 可达性以及 sing-box 服务检查。任一单独证据都不能证明端到端流量正确经过预期路径。
 
+若 WireGuard GUI 已激活但没有近期握手或客户端 RX 始终为零，停止上层排查，按 [WireGuard 快速排查手册](wireguard-fast-troubleshooting.md) 对照 VPS 与 Windows 的同一轮 UDP 数据包。不要为验证基础隧道切换到全隧道或修改活动 Clash Profile。
+
 ## 6. 维护、升级与回滚
 
 ### 常规升级
@@ -131,6 +133,8 @@ powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.
 ## 8. 关联手册
 
 - [WireGuard 指南](wireguard.md)
+- [WireGuard 快速排查手册](wireguard-fast-troubleshooting.md)
+- [2026-08-22 WireGuard 连接故障复盘](../wireguard-connectivity-incident-2026-08-22.md)
 - [sing-box 指南](sing-box.md)
 - [VPS 网络架构](../architecture.md)
 - [Remote Profile 教程](../clash-remote-profile.md)
