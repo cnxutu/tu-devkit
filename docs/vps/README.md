@@ -2,6 +2,8 @@
 
 先从 [`vps-init/README.md`](../../vps-init/README.md) 的路线决策表选择 Quick/Secure、是否启用 WireGuard，以及本地 YAML/Remote Profile。
 
+AI 处理明确指定为 `P0` 的 VPS 部署、调整或网络问题时，先读取 [`AGENTS.md`](AGENTS.md)。它是本模块的部署、网络诊断、证据、变更与回滚总约束入口；具体手册和历史复盘仍按任务症状最小加载。
+
 - [初始化教程](initialization-guide.md)：四条可直接执行的完整路径。
 - [Remote Profile 教程](clash-remote-profile.md)：通过 WireGuard 私网订阅 Clash 配置。
 - [极简 sing-box 本地 Profile](clash-verge-minimal-sing-box-profile.md)：单一公网 sing-box 节点、系统代理模式，不启用 TUN 或 WireGuard。
