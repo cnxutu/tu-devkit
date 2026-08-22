@@ -166,6 +166,8 @@ Remove-Item -LiteralPath "$env:TEMP\wg-pktmon.etl"
 
 这些阶段不能倒序。Clash 中名为 `VPS-WireGuard` 的节点在本项目里是“经操作系统 WireGuard 私网访问的 Shadowsocks 节点”，不是 Mihomo 原生 `type: wireguard` 节点；它超时不能直接证明 WireGuard 密钥错误。
 
+若阶段 A、B 已通过而阶段 C 失败，不再修改 WireGuard，转入 [Clash Verge 私网节点快速排查手册](clash-verge-wireguard-private-node-troubleshooting.md)，对比隔离节点与主 Mihomo TUN 下的出口接口。
+
 ## 7. 禁止的低效或高风险做法
 
 - 不以绿色 GUI、Tunnel Service Running、适配器 Up 作为“已经连上”的结论。
@@ -200,3 +202,4 @@ VPS 运行态：<接口/监听/握手/收发/短抓包>
 - Windows Tunnel Service、DPAPI 配置和管理员权限见 [WireGuard for Windows Enterprise Usage](https://git.zx2c4.com/wireguard-windows/about/docs/enterprise.md)。
 - Windows 物理路径抓包见 [Microsoft Packet Monitor](https://learn.microsoft.com/en-us/windows-server/networking/technologies/pktmon/pktmon) 和 [`pktmon filter add`](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/pktmon-filter-add)。
 - 基础概念和安装见 [WireGuard 使用指南](wireguard.md)，组合链路见 [联合架构与运维手册](combined-stack-operations.md)。
+- WireGuard 已通但 Clash 私网节点失败时，见 [Clash Verge 私网节点快速排查手册](clash-verge-wireguard-private-node-troubleshooting.md) 与 [2026-08-22 Clash Verge 私网节点故障复盘](../clash-verge-wireguard-private-node-incident-2026-08-22.md)。

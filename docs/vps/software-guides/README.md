@@ -12,12 +12,14 @@
 | --- | --- |
 | 理解 VPN 隧道、Peer、`AllowedIPs`、分流和全隧道 | [WireGuard 指南](wireguard.md) |
 | 快速定位“GUI 已连接但无握手、RX=0、私网不通” | [WireGuard 快速排查手册](wireguard-fast-troubleshooting.md) |
+| WireGuard 已通，但 Clash Verge 私网节点在 TUN 下 Timeout | [Clash Verge 私网节点快速排查手册](clash-verge-wireguard-private-node-troubleshooting.md) |
 | 理解代理内核、Inbound/Outbound、路由、服务管理 | [sing-box 指南](sing-box.md) |
 | 核对 VPS 安装路径、进程、配置、日志和组合链路 | [联合架构与运维手册](combined-stack-operations.md) |
 | 直接部署本仓库方案 | [VPS 初始化教程](../initialization-guide.md) |
 | 查看当前 P0 网络拓扑 | [VPS 网络架构](../architecture.md) |
 | 查看密钥、端口与日志边界 | [VPS 安全说明](../security.md) |
 | 查看单向 UDP 回程故障的完整证据链与经验 | [2026-08-22 WireGuard 连接故障复盘](../wireguard-connectivity-incident-2026-08-22.md) |
+| 查看 TUN 下私网节点出口接口选择故障的证据链 | [2026-08-22 Clash Verge 私网节点故障复盘](../clash-verge-wireguard-private-node-incident-2026-08-22.md) |
 
 ## 两者的边界
 
