@@ -1,14 +1,13 @@
-# P0：tu-devkit
+# P0-1：tu-devkit
 
-`tu-devkit` 是 P0，负责维护开发工具与 AI 工程上下文能力；它不是 P1–P4 的运行时服务。
+`tu-devkit` 是 P0-1，维护开发环境、CLI、VPS 与工程工具；不承载 Primary 的共享 AI 知识库或产品业务上下文。
 
-## 入口
+## 目录入口
 
-- [AI Engineering Context Platform](./ai-guidance/README.md)：P1–P4 的系统知识、AI 使用说明、角色、规则、Skill 与 Template。
-- [AI 开发环境初始化](./dev-env-init/README.md)：`tu` 命令和开发环境安装说明。
-- [VPS 网络环境初始化](./vps-init/README.md)：Quick/Secure 双路线、可选 WireGuard、sing-box 与私网 Clash Remote Profile。
-- [P0 模块演进初步规划](./docs/p0-module-evolution-plan.md)：模块化、归档和未来独立化的决策门槛。
+- [开发环境初始化](./dev-env-init/README.md)：`tu` 命令和开发环境安装说明。
+- [VPS 初始化与运维](./vps-init/README.md)：Quick/Secure 双路线、可选 WireGuard、sing-box 与私网 Clash Remote Profile。
+- [VPS 文档导航](./docs/vps/README.md)
 
-根目录只提供导航。各模块的安装、使用和设计说明均在对应二级目录内维护。
+## AI 协作边界
 
-本目录的 [AGENTS.md](AGENTS.md) 是唯一的 AI 协作入口，它会直接将 Codex 引导至 `ai-guidance/`；公共 AI 约束与产品知识均在该模块统一维护。
+本仓库的本地约束见 [AGENTS.md](AGENTS.md)。VPS 任务须同时遵循 [docs/vps/AGENTS.md](docs/vps/AGENTS.md)；其他任务仅按目标目录的局部说明和当前工程证据执行。

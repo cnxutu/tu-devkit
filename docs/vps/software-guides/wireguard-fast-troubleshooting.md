@@ -19,7 +19,7 @@ WireGuard GUI 的“已连接”只证明本地 Tunnel Service 和虚拟网卡�
 | G3 双向传输 | 两端 RX、TX 均大于零并在探测时变化 | 客户端 TX 增长但 RX 为零 |
 | G4 私网业务可达 | 私网 Peer 地址或指定 TCP 服务探测成功 | 公网代理节点可用 |
 
-只有 G1-G4 全部通过，才进入 Clash 或全隧道验证。P0 的联合运行态检查见 [`check-clash-runtime.ps1`](../../../vps-init/scripts/check-clash-runtime.ps1)，但它不能代替无握手阶段的 UDP 抓包。
+只有 G1-G4 全部通过，才进入 Clash 或全隧道验证。P0-1 的联合运行态检查见 [`check-clash-runtime.ps1`](../../../vps-init/scripts/check-clash-runtime.ps1)，但它不能代替无握手阶段的 UDP 抓包。
 
 ## 3. 十分钟判定路径
 

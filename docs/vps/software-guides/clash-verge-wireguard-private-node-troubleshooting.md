@@ -4,7 +4,7 @@
 
 本手册处理以下链路：Windows 操作系统先建立 WireGuard 分流隧道，Clash Verge Rev 使用 Mihomo 运行一个以 VPS WireGuard 私网地址为 `server` 的 Shadowsocks 节点，再由规则组或 `fallback` 选择该节点。
 
-这里的 `VPS-WireGuard` 只是节点名称。它在当前 P0 标准配置中是 `type: ss`，不是 Mihomo 原生 `type: wireguard`。WireGuard 身份、握手和私网路由由 Windows WireGuard 客户端负责；Mihomo 只经该私网路由连接 sing-box。
+这里的 `VPS-WireGuard` 只是节点名称。它在当前 P0-1 标准配置中是 `type: ss`，不是 Mihomo 原生 `type: wireguard`。WireGuard 身份、握手和私网路由由 Windows WireGuard 客户端负责；Mihomo 只经该私网路由连接 sing-box。
 
 所有示例均使用占位符，不记录真实 IP、端口、密钥、密码、订阅 URL、Profile ID 或 Controller 地址。当前标准配置只关注受控的 `company-vps.yaml`；极简备用 Profile 不在本流程中修改。
 
@@ -126,7 +126,7 @@ proxies:
 - 主实例 `/proxies` 中私网节点 `interface=<WG_ADAPTER>`；
 - 私网节点 `alive=true` 且出现有效延迟历史；
 - 目标 `fallback` 组的 `now=VPS-WireGuard`；
-- P0 运行态检查通过：
+- P0-1 运行态检查通过：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.ps1 -RequireWireGuard -RequireTun
@@ -167,6 +167,6 @@ WireGuard：<服务、适配器、近期握手、RX/TX、私网路由>
 - [Mihomo 通用代理字段](https://wiki.metacubex.one/en/config/proxies/)：`server` 可为域名或 IP，`interface-name` 指定节点连接使用的接口。
 - [Mihomo fallback 代理组](https://wiki.metacubex.one/en/config/proxy-groups/fallback/)：按配置顺序使用第一个可用节点。
 - [Mihomo API](https://wiki.metacubex.one/en/api/)：代理运行态和节点/代理组延迟接口。
-- [Mihomo 原生 WireGuard 节点](https://wiki.metacubex.one/en/config/proxies/wg/)：仅用于辨别架构边界，当前 P0 链路未采用该节点类型。
+- [Mihomo 原生 WireGuard 节点](https://wiki.metacubex.one/en/config/proxies/wg/)：仅用于辨别架构边界，当前 P0-1 链路未采用该节点类型。
 - [联合架构与运维手册](combined-stack-operations.md)
 - [2026-08-22 Clash Verge 私网节点故障复盘](../clash-verge-wireguard-private-node-incident-2026-08-22.md)

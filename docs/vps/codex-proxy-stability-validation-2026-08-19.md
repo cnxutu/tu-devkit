@@ -22,8 +22,8 @@
 | `company-vps.yaml` 与 Clash 活动 Profile 不一致 | 修改未真正生效 | 已部署到活动 Profile；最终 SHA-256 一致 |
 | WireGuard 隧道服务曾运行但适配器消失 | 私网节点不可达，表现为偶发超时 | 重装单条隧道服务；服务 Running、适配器 Up、私网 8080 可达 |
 | Windows 客户端源配置缺少 Keepalive | NAT 空闲后可能断握手 | 加入 `PersistentKeepalive = 25` 并通过服务重装加载 |
-| P0 默认 `client_mode: full` 与 AI 管理分流目标矛盾 | 可能误把全机流量导入 WireGuard，破坏公网 fallback 独立性 | 默认改为 `management`，只生成 `10.66.66.0/24`；`full` 仍可显式选择 |
-| P0 运行时检查器只看 Clash，未要求 WG 服务/适配器/私网端口 | 配置正确但隧道假活无法被发现 | 新增 `-RequireWireGuard`，联合检查节点地址、服务、适配器和 TCP 入口 |
+| P0-1 默认 `client_mode: full` 与 AI 管理分流目标矛盾 | 可能误把全机流量导入 WireGuard，破坏公网 fallback 独立性 | 默认改为 `management`，只生成 `10.66.66.0/24`；`full` 仍可显式选择 |
+| P0-1 运行时检查器只看 Clash，未要求 WG 服务/适配器/私网端口 | 配置正确但隧道假活无法被发现 | 新增 `-RequireWireGuard`，联合检查节点地址、服务、适配器和 TCP 入口 |
 | Clash Verge 重启后 Windows 注册表系统代理漂移为关闭 | Codex 自身可用，但浏览器/ChatGPT 可能绕过代理 | 已核对代理地址并恢复 `ProxyEnable=1`，目标为 `127.0.0.1:7897` |
 | 旧方案 h2mux 对长流连接产生硬错误 | 模型刷新、WebSocket、流式响应不稳定 | 继续使用普通 Shadowsocks TCP，客户端禁止 `smux/h2mux` |
 | VPS 无可用 IPv6 出口但旧配置会尝试 IPv6 | `cannot assign requested address` | 保持服务端解析与路由 IPv4-only，客户端 `ipv6: false` |
@@ -89,7 +89,7 @@
 
 ### 公网 fallback 与恢复
 
-为避免依赖受 Windows ACL 限制的服务停止操作，本次只对活动 Clash Profile 做了可回滚故障注入：临时将 WireGuard 节点指向不可达的同网段地址，P0 源文件和 WireGuard 服务不变。
+为避免依赖受 Windows ACL 限制的服务停止操作，本次只对活动 Clash Profile 做了可回滚故障注入：临时将 WireGuard 节点指向不可达的同网段地址，P0-1 源文件和 WireGuard 服务不变。
 
 | 检查 | 结果 |
 | --- | --- |
@@ -103,7 +103,7 @@
 
 该结果验证的是 Clash 节点故障的自动回退能力。由于当前会话无法停止 WireGuard 隧道服务，没有声称完成“真实卸载网卡”的破坏性演练；从 Clash 视角，两种故障都表现为私网 Shadowsocks 入口不可达。
 
-## P0 代码调整
+## P0-1 代码调整
 
 - `vps-init/config/vps.example.yaml`：WireGuard 默认模式改为 `management`。
 - `vps-init/lib/config.sh`：默认 AllowedIPs 改为 VPS 私网段；保留显式 `full` 模式。
@@ -129,7 +129,7 @@
 | 可用性与容灾 | 30% | 9.2 | 私网优先、公网回退和恢复均有实测证据 |
 | 长连接稳定性 | 20% | 8.9 | 普通 SS TCP、TCP-only、Keepalive 25、无 smux |
 | 延迟与抖动 | 20% | 8.1 | ChatGPT/Codex P95 约 0.57/0.64 秒；OpenAI API 有一次 1.85 秒长尾 |
-| 配置一致性 | 15% | 9.4 | 源、活动 Profile、运行时和 P0 防回归已对齐 |
+| 配置一致性 | 15% | 9.4 | 源、活动 Profile、运行时和 P0-1 防回归已对齐 |
 | 安全性 | 10% | 7.0 | 密钥边界正确，但 UFW inactive，公网 8080 为 fallback 保持开放 |
 | 可观测性 | 5% | 7.6 | 自动检查已增强，但 REST Controller 不可用且详细 WG 状态受 ACL 限制 |
 | **加权总分** | **100%** | **8.7** | 适合作为个人 AI 开发代理的稳定主链路 |

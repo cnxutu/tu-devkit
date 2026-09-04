@@ -46,7 +46,7 @@ rules:
   - IP-CIDR6,fc00::/7,DIRECT,no-resolve
   - IP-CIDR6,fe80::/10,DIRECT,no-resolve
 
-  # P0 sing-box 当前为 TCP-only；拒绝 QUIC 的 UDP/443，立即回落到 TCP。
+  # P0-1 sing-box 当前为 TCP-only；拒绝 QUIC 的 UDP/443，立即回落到 TCP。
   - 'AND,((NETWORK,UDP),(DST-PORT,443)),REJECT'
 
   # 其他经系统代理进入 Mihomo 的流量统一走 sing-box。

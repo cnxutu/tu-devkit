@@ -2,7 +2,7 @@
 
 ## 1. 适用范围
 
-本手册描述 P0 的个人 AI 开发代理链路：Windows 上的 Clash Verge 按规则选择代理，优先经 WireGuard 私网进入 VPS 上的 sing-box Shadowsocks 2022 入站；私网不可用时回退同一 sing-box 入站的公网地址。它不提供公共代理服务、VPS 购买方案、公开 Controller 或 Remote Profile 的公网发布方法。
+本手册描述 P0-1 的个人 AI 开发代理链路：Windows 上的 Clash Verge 按规则选择代理，优先经 WireGuard 私网进入 VPS 上的 sing-box Shadowsocks 2022 入站；私网不可用时回退同一 sing-box 入站的公网地址。它不提供公共代理服务、VPS 购买方案、公开 Controller 或 Remote Profile 的公网发布方法。
 
 所有示例均使用占位符或私网语义，不记录真实公网地址、端口、密钥、订阅 URL、运行 PID 或软件版本。具体部署参数始终以本机 `vps.local.yaml`、VPS 受保护状态文件和实机命令为准。
 
@@ -110,7 +110,7 @@ powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.
 4. 先验证 `sing-box check`、`doctor.sh`、WireGuard 握手，再刷新/导入新的 Clash Profile。
 5. 在 Windows 上验证私网优先、公网 fallback 与恢复三个阶段，最后再结束维护窗口。
 
-不要把“更新 sing-box”简化为直接升级单一 APT 包：P0 的生成配置、客户端模板和运行态规则必须一起验证。
+不要把“更新 sing-box”简化为直接升级单一 APT 包：P0-1 的生成配置、客户端模板和运行态规则必须一起验证。
 
 ### 回滚原则
 

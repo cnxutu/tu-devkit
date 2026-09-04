@@ -4,7 +4,7 @@
 
 本次故障发生在 WireGuard 基础隧道修复之后。Windows WireGuard 已有近期握手、双向传输和正确私网路由，私网 sing-box TCP 入口可达；但 Clash Verge Rev 主 Mihomo 在开启 TUN 时仍把 `VPS-WireGuard` 判定为不可用，`fallback` 因而选择公网节点。
 
-最终根因是主 Mihomo 的私网 Shadowsocks 节点没有显式指定 Windows WireGuard 出口适配器。在 TUN 运行态下，自动接口选择没有把该节点连接送到操作系统 WireGuard 路径。给标准版 Profile 的 `VPS-WireGuard` 节点添加设备级 `interface-name: <WG_ADAPTER>`，语法检查并热加载后，主实例报告该节点 `alive=true`、产生有效延迟，`fallback` 的活动节点切回私网节点，P0 WireGuard + TUN 运行态检查通过。
+最终根因是主 Mihomo 的私网 Shadowsocks 节点没有显式指定 Windows WireGuard 出口适配器。在 TUN 运行态下，自动接口选择没有把该节点连接送到操作系统 WireGuard 路径。给标准版 Profile 的 `VPS-WireGuard` 节点添加设备级 `interface-name: <WG_ADAPTER>`，语法检查并热加载后，主实例报告该节点 `alive=true`、产生有效延迟，`fallback` 的活动节点切回私网节点，P0-1 WireGuard + TUN 运行态检查通过。
 
 本次不需要把节点迁移为 Mihomo 原生 `type: wireguard`，也不需要修改 WireGuard Peer、sing-box 服务端、认证信息或极简备用 Profile。
 
@@ -23,7 +23,7 @@
 | Windows WireGuard | Tunnel Service 与适配器 Up，有近期握手和双向计数 | 基础隧道已建立 |
 | Windows 路由 | `<WG_PRIVATE_CIDR>` 指向 WireGuard 适配器 | 私网目标具备操作系统路由 |
 | 私网 TCP 探测 | `<WG_SERVER_PRIVATE_IP>:<PRIVATE_SS_PORT>` 可建连 | VPS 私网 sing-box 入口可达 |
-| P0 基线检查 | `-RequireWireGuard -RequireTun` 的基础检查通过 | 当前标准运行要素存在，但仍需节点级证据 |
+| P0-1 基线检查 | `-RequireWireGuard -RequireTun` 的基础检查通过 | 当前标准运行要素存在，但仍需节点级证据 |
 | 主 Mihomo `/proxies` | 私网节点 `alive=false`、无有效延迟、`interface` 为空；组 `now` 为公网节点 | 故障位于主 Mihomo 节点连接/接口选择层 |
 | 私网节点隔离测试 | 同一节点在禁用 TUN 的最小临时 Mihomo 中多次完成实际 HTTP/TLS 请求 | 节点协议、认证、VPS 私网入口和服务端出站有效 |
 | 标准 Profile 隔离测试 | 禁用隔离实例自身 TUN 后，`fallback` 选择私网节点并完成实际请求 | 规则组顺序与配置逻辑有效 |
@@ -42,7 +42,7 @@
 6. 将主实例和隔离实例唯一的关键差异收敛到 TUN 下的出口接口选择。
 7. 依据 Mihomo 官方通用代理字段说明，在私网节点添加 `interface-name: <WG_ADAPTER>`。
 8. 对受控源、当前存储 Profile 和合并配置分别备份并用当前 Mihomo 校验，随后经 Controller 热加载。
-9. 复验主实例节点健康、接口、代理组选择和 P0 运行态检查。
+9. 复验主实例节点健康、接口、代理组选择和 P0-1 运行态检查。
 
 ### 4.2 没有解决根因或容易误导的尝试
 
@@ -105,7 +105,7 @@ interface-name: <WG_ADAPTER>
 
 - `verified`：操作系统 WireGuard、私网路由和私网 sing-box 入口正常。
 - `verified`：私网 Shadowsocks 节点和标准 `fallback` 配置在隔离 Mihomo 中正常。
-- `verified`：增加正确的设备级接口绑定后，主 Mihomo 私网节点转为健康，代理组选择私网节点，P0 运行态检查通过。
+- `verified`：增加正确的设备级接口绑定后，主 Mihomo 私网节点转为健康，代理组选择私网节点，P0-1 运行态检查通过。
 - `verified`：公网节点仍可作为 fallback，标准版配置可以继续支撑日常开发。
 - `observed`：最终实际目标请求并非零错误，曾出现少量目标级超时；这不能推翻节点健康和选路修复，但说明跨境网络与目标站稳定性仍需单独观察。
 - `unknown`：TUN 自动接口选择在当前版本内部为何未命中操作系统私网路由，端点证据不足以进一步归因；当前采用官方支持的显式接口字段规避。
@@ -117,7 +117,7 @@ interface-name: <WG_ADAPTER>
 3. 主 Mihomo：`alive/history/interface` 与组 `now/all`。
 4. 隔离节点：禁用 TUN、独立端口、实际 HTTP/TLS 多次请求。
 5. 仅当隔离成功而主 TUN 失败时，核对或添加 `interface-name`。
-6. 语法检查、备份、热加载、节点健康、组选择、P0 检查、实际请求依次验收。
+6. 语法检查、备份、热加载、节点健康、组选择、P0-1 检查、实际请求依次验收。
 7. 记录成功率和错误类型，不把目标站波动、TLS 客户端错误或解析脚本错误混为代理失败。
 
 完整命令、门禁和 AI 交接格式见 [Clash Verge 经 WireGuard 私网节点快速排查手册](software-guides/clash-verge-wireguard-private-node-troubleshooting.md)。

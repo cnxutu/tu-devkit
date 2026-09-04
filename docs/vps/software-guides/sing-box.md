@@ -69,7 +69,7 @@ dpkg -L sing-box
 systemctl show sing-box -p FragmentPath -p ExecStart
 ```
 
-当前 P0 脚本管理的服务端配置是 `/etc/sing-box/config.json`，权限为 `0600`；生成的 Shadowsocks 密码存于受限状态目录，不写入安装日志。不要将这些位置当作跨发行版的 sing-box 固定默认值。
+当前 P0-1 脚本管理的服务端配置是 `/etc/sing-box/config.json`，权限为 `0600`；生成的 Shadowsocks 密码存于受限状态目录，不写入安装日志。不要将这些位置当作跨发行版的 sing-box 固定默认值。
 
 ## 4. 配置模型与项目映射
 
@@ -99,7 +99,7 @@ systemctl show sing-box -p FragmentPath -p ExecStart
 }
 ```
 
-| 配置项 | P0 当前策略 | 原因 |
+| 配置项 | P0-1 当前策略 | 原因 |
 | --- | --- | --- |
 | Shadowsocks 方法 | `2022-blake3-aes-128-gcm`（默认） | 脚本会按方法生成并校验对应长度的随机 Base64 密钥 |
 | 网络 | TCP-only | Clash 模板禁用节点 UDP，并拒绝 UDP/443，使 QUIC 回落到 HTTP/2/TCP |
@@ -119,7 +119,7 @@ sudo systemctl restart sing-box
 sudo systemctl status sing-box --no-pager
 ```
 
-`sing-box check` 是官方配置检查入口；也可用 `sing-box format` 格式化**副本**，不要把格式化命令直接作用于含秘密的未知文件。P0 脚本在写入配置后已自动执行 `sing-box check`；校验失败会恢复脚本管理的上一版配置。
+`sing-box check` 是官方配置检查入口；也可用 `sing-box format` 格式化**副本**，不要把格式化命令直接作用于含秘密的未知文件。P0-1 脚本在写入配置后已自动执行 `sing-box check`；校验失败会恢复脚本管理的上一版配置。
 
 ## 5. 日常运维与验证
 
@@ -177,7 +177,7 @@ powershell -ExecutionPolicy Bypass -File .\vps-init\scripts\check-clash-runtime.
 - [官方配置索引](https://sing-box.sagernet.org/configuration/)
 - [官方 Shadowsocks 入站说明](https://sing-box.sagernet.org/configuration/inbound/shadowsocks/)
 - [官方 multiplex 配置说明](https://sing-box.sagernet.org/configuration/shared/multiplex/)
-- [P0 sing-box 安装实现](../../../vps-init/scripts/sing-box.sh)
-- [P0 sing-box APT 仓库校验](../../../vps-init/scripts/sing-box-repository.sh)
-- [P0 服务端诊断](../../../vps-init/doctor.sh)
+- [P0-1 sing-box 安装实现](../../../vps-init/scripts/sing-box.sh)
+- [P0-1 sing-box APT 仓库校验](../../../vps-init/scripts/sing-box-repository.sh)
+- [P0-1 服务端诊断](../../../vps-init/doctor.sh)
 - [VPS 安全说明](../security.md)
